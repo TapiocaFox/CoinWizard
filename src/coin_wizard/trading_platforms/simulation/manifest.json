@@ -1,0 +1,17 @@
+{
+  "name": "simulation",
+
+  "supported_operations_list": [
+    {
+      "from": "USD",
+      "to": "NTD"
+    }
+  ],
+
+  "supported_ordered_pair_list": [
+    {
+      "from": "USD",
+      "to": "NTD"
+    }
+  ],
+}
