@@ -12,5 +12,5 @@ class TradingAgent(threading.Thread):
         print(message)
 
     def run(self):
-        print(self.APIs)
+        # print(self.APIs)
         self.APIs['test'](123)
