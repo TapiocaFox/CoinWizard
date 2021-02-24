@@ -30,7 +30,7 @@ Temporary Items
 
 # Coin wizard
 temp/
-
+pair_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
