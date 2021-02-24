@@ -94,6 +94,18 @@ def download_hist_data(year='2016',
     :param output_directory: Where to dump the data.
     :return: ZIP Filename.
     """
+    # Check if file already exists.
+    if month is None:
+        output_filename = 'DAT_{}_{}_{}_{}'.format(
+            platform, pair.upper(), time_frame, str(year))
+    else:
+        output_filename = 'DAT_{}_{}_{}_{}'.format(platform, pair.upper(), time_frame,
+                                                   '{}{}'.format(year, str(month).zfill(2)))
+    output_file_path = os.path.join(output_directory, output_filename + '.npy')
+
+
+    if os.path.exists(output_file_path):
+        return output_file_path
 
     tick_data = time_frame.startswith('T')
     if (not tick_data) and ((int(year) >= datetime.now().year and month is None) or
@@ -147,12 +159,7 @@ def download_hist_data(year='2016',
     if not os.path.exists('./temp'):
         os.makedirs('./temp')
     remove_folder_files('./temp')
-    if month is None:
-        output_filename = 'DAT_{}_{}_{}_{}'.format(
-            platform, pair.upper(), time_frame, str(year))
-    else:
-        output_filename = 'DAT_{}_{}_{}_{}'.format(platform, pair.upper(), time_frame,
-                                                   '{}{}'.format(year, str(month).zfill(2)))
+
     output_temp_file_path = os.path.join('./temp', output_filename + '.zip')
     with open(output_temp_file_path, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
@@ -173,13 +180,13 @@ def download_hist_data(year='2016',
                 date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S'))
                 nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=(int, float, float, float, float), usecols=(0, 1, 2, 3, 4))
                 # print(nparray)
-                output_temp_file_path = os.path.join(output_directory, output_filename + '.npy')
-                with open(output_temp_file_path, 'wb') as f:
+
+                with open(output_file_path, 'wb') as f:
                     np.save(f, nparray)
             break
 
 
-    return output_temp_file_path
+    return output_file_path
 
 
 if __name__ == '__main__':

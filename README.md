@@ -1,2 +1,2 @@
 # CoinWizard
-A foreign currencies/pair trading management program.
+A foreign currencies/forex trading management program.
