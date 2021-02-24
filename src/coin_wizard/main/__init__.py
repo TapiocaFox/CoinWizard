@@ -56,7 +56,7 @@ def update_historical_pair_data(set_percentage, log_text):
                     set_percentage(int(percentage_per_year*(year-int(history_first_trading_month[0:4]))))
             except Exception:
                 set_percentage(100)
-                log_text('Done for currency '+  currency_pair_name+ '.\n')
+                log_text('Done for currency '+  currency_pair_name+ '.\n\n')
 
     log_text('Finished.\n')
     set_percentage(100)
