@@ -26,6 +26,12 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+
+
+# Coin wizard
+temp/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

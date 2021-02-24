@@ -7,16 +7,27 @@ import functools
 class EventManager(object):
     def __init__(self):
         self.event_listeners = {}
+        self.stopped = False
+        self.tasks = []
+
+    # def start_loop(self):
+    #     asyncio.run(self.loop())
+    #
+    # def stop_loop(self):
+    #     self.stopped = True
+    #
+    # async def loop(self):
+    #     while self.stopped:
+    #         await asyncio.gather(*self.tasks)
+    #         await asyncio.sleep(1)
 
     def on(self, event_name, listener):
         self.event_listeners[event_name] = listener
         # print(self.event_listeners)
 
-    async def emit_async(self, event_name, params):
-        # print(self.event_listeners)
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, functools.partial(self.event_listeners[event_name], params))
-        return result
+    # async def emit_async(self, event_name, params):
+    #     self.event_listeners[event_name](params)
 
     def emit(self, event_name, params):
-        asyncio.run(self.emit_async(event_name, params))
+        # self.tasks.append(asyncio.to_thread(self.event_listeners[event_name], params))
+        return self.event_listeners[event_name](params)
