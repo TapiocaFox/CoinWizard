@@ -59,9 +59,12 @@ def update_historical_pair_data(set_percentage, log_text):
                         could_download_full_year = True
                     except AssertionError:
                         log_text('Downloading by month.\n')  # lets download it month by month.
+                    month_count = 12
+                    if year == year_now:
+                        month_count = month_now
                     month = 1
                     while not could_download_full_year and month <= 12:
-                        if month > month_now and year == year_now:
+                        if month > month_count:
                             raise
                         log_text('Downloading pair: '+currency_pair_name+', year: '+str(year)+', month: '+str(month)+'. ')
                         try:
@@ -75,7 +78,8 @@ def update_historical_pair_data(set_percentage, log_text):
                             log_text('Skiped.\n')
                             raise
                         log_text('Downloaded.\n')
-                        set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1)-1) + (percentage_per_year/month_now)*month))
+
+                        set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1)-1) + (percentage_per_year/month_count)*month))
                         month += 1
 
                     set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1))))
