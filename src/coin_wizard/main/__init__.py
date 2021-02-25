@@ -50,7 +50,7 @@ def update_historical_pair_data(set_percentage, log_text):
                 while True:
                     could_download_full_year = False
                     try:
-                        log_text('Downloading pair: '+currency_pair_name+' year: '+str(year)+'. ')
+                        log_text('Downloading pair: '+currency_pair_name+', year: '+str(year)+'. ')
                         download_hist_data(year=str(year),
                                                       pair=pair,
                                                       output_directory=output_folder,
@@ -63,7 +63,7 @@ def update_historical_pair_data(set_percentage, log_text):
                     while not could_download_full_year and month <= 12:
                         if month > month_now and year == year_now:
                             raise
-                        log_text('Downloading pair: '+currency_pair_name+' year: '+str(year)+' month: '+str(month)+'. ')
+                        log_text('Downloading pair: '+currency_pair_name+', year: '+str(year)+', month: '+str(month)+'. ')
                         try:
                             download_hist_data(year=str(year),
                                                           month=str(month),
