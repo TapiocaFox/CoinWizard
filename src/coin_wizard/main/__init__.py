@@ -89,7 +89,7 @@ def start():
             (11, 'Update historical pair data'),
             (99, 'Leave'),
         ]
-        answer = radiolist_dialog(title='What do you want to do?', text='Trading agent(Current: "'+ settings['trading_agent'] +'")', values = questions).run()
+        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'")', values = questions).run()
 
         if answer == 99:
             print('Good bye!')
