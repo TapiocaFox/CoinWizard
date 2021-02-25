@@ -83,6 +83,7 @@ def download_hist_data(year='2016',
                        time_frame=TimeFrame.ONE_MINUTE,
                        platform=Platform.GENERIC_ASCII,
                        output_directory='.',
+                       download_again=False,
                        verbose=True):
     """
     Download 1-Minute FX data per month.
@@ -104,7 +105,7 @@ def download_hist_data(year='2016',
     output_file_path = os.path.join(output_directory, output_filename + '.npy')
 
 
-    if os.path.exists(output_file_path):
+    if os.path.exists(output_file_path) and download_again == False:
         return output_file_path
 
     tick_data = time_frame.startswith('T')

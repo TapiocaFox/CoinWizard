@@ -26,7 +26,14 @@ def update_historical_pair_data(set_percentage, log_text):
     with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f:
         reader = csv.reader(f, delimiter=',')
         next(reader, None)
-        for row in reader:
+
+        total_row_count = 0
+        # count total
+        with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f2:
+            reader_counter = csv.reader(f2, delimiter=',')
+            total_row_count = sum(1 for row in reader_counter)-1
+
+        for row_index, row in enumerate(reader):
             set_percentage(0)
             currency_pair_name, pair, history_first_trading_month = row
             year = int(history_first_trading_month[0:4])
@@ -46,17 +53,21 @@ def update_historical_pair_data(set_percentage, log_text):
                         pass  # lets download it month by month.
                     month = 1
                     while not could_download_full_year and month <= 12:
+                        download_again = (month == datetime.now().month)
                         log_text('Downloaded ' + download_hist_data(year=str(year),
                                                       month=str(month),
                                                       pair=pair,
                                                       output_directory=output_folder,
+                                                      download_again=download_again,
                                                       verbose=False)+ '.\n')
+                        set_percentage(int(8*month))
                         month += 1
                     year += 1
                     set_percentage(int(percentage_per_year*(year-int(history_first_trading_month[0:4]))))
             except Exception:
+
                 set_percentage(100)
-                log_text('Done for currency '+  currency_pair_name+ '.\n\n')
+                log_text('Done for currency '+  currency_pair_name+ '(' + str(row_index+1) +'/'+str(total_row_count)+').\n\n')
 
     log_text('Finished.\n')
     set_percentage(100)
