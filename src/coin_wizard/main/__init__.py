@@ -23,11 +23,16 @@ print('Current working directory:', cwd)
 def update_historical_pair_data(set_percentage, log_text):
     set_percentage(0)
     log_text('Updating...\n')
+
+    year_now = datetime.now().year
+    month_now = datetime.now().month
+
     with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f:
         reader = csv.reader(f, delimiter=',')
         next(reader, None)
 
         total_row_count = 0
+
         # count total
         with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f2:
             reader_counter = csv.reader(f2, delimiter=',')
@@ -35,37 +40,47 @@ def update_historical_pair_data(set_percentage, log_text):
 
         for row_index, row in enumerate(reader):
             set_percentage(0)
-            currency_pair_name, pair, history_first_trading_month = row
-            year = int(history_first_trading_month[0:4])
-            percentage_per_year = 100/(datetime.now().year - year)
+            currency_pair_name, pair, history_first_trading_date = row
+            history_first_trading_year = int(history_first_trading_date[0:4])
+            year = history_first_trading_year
+            percentage_per_year = 100/(datetime.now().year - year + 1)
             log_text('Updating ' + currency_pair_name + '.\n')
             output_folder = 'pair_data/'+pair
             try:
                 while True:
                     could_download_full_year = False
                     try:
-                        log_text('Downloaded ' + download_hist_data(year=str(year),
+                        log_text('Downloading pair: '+currency_pair_name+' year: '+str(year)+'. ')
+                        download_hist_data(year=str(year),
                                                       pair=pair,
                                                       output_directory=output_folder,
-                                                      verbose=False)+ '.\n')
+                                                      verbose=False)
+                        log_text('Downloaded.\n')
                         could_download_full_year = True
                     except AssertionError:
-                        pass  # lets download it month by month.
+                        log_text('Downloading by month.\n')  # lets download it month by month.
                     month = 1
                     while not could_download_full_year and month <= 12:
-                        download_again = (month == datetime.now().month)
-                        log_text('Downloaded ' + download_hist_data(year=str(year),
-                                                      month=str(month),
-                                                      pair=pair,
-                                                      output_directory=output_folder,
-                                                      download_again=download_again,
-                                                      verbose=False)+ '.\n')
-                        set_percentage(int(8*month))
+                        if month > month_now and year == year_now:
+                            raise
+                        log_text('Downloading pair: '+currency_pair_name+' year: '+str(year)+' month: '+str(month)+'. ')
+                        try:
+                            download_hist_data(year=str(year),
+                                                          month=str(month),
+                                                          pair=pair,
+                                                          output_directory=output_folder,
+                                                          download_again=True,
+                                                          verbose=False)
+                        except Exception:
+                            log_text('Skiped.\n')
+                            raise
+                        log_text('Downloaded.\n')
+                        set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1)-1) + (percentage_per_year/month_now)*month))
                         month += 1
-                    year += 1
-                    set_percentage(int(percentage_per_year*(year-int(history_first_trading_month[0:4]))))
-            except Exception:
 
+                    set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1))))
+                    year += 1
+            except Exception:
                 set_percentage(100)
                 log_text('Done for currency '+  currency_pair_name+ '(' + str(row_index+1) +'/'+str(total_row_count)+').\n\n')
 
