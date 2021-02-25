@@ -11,6 +11,7 @@ from numpy import genfromtxt
 temp_directory = './temp'
 platform = Platform.GENERIC_ASCII
 time_frame = TimeFrame.ONE_MINUTE
+pair_data_directory = 'pair_data/'
 
 def remove_directory_files(directory):
     for filename in os.listdir(directory):
@@ -56,7 +57,7 @@ def update_a_historical_pair_data(output_directory, year="2016", month=None, pai
         if '.csv' in filename:
             date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S'))
             nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=(int, float, float, float, float), usecols=(0, 1, 2, 3, 4))
-            # print(nparray)
+            # print(nparray.shape)
 
             with open(output_file_path, 'wb') as f:
                 np.save(f, nparray)
@@ -88,7 +89,7 @@ def update_historical_pair_data(set_percentage, log_text):
             year = history_first_trading_year
             percentage_per_year = 100/(datetime.now().year - year + 1)
             log_text('Updating ' + currency_pair_name + '.\n')
-            output_directory = 'pair_data/'+pair
+            output_directory = os.path.join(pair_data_directory, pair)
             try:
                 while True:
                     could_download_full_year = False
@@ -134,4 +135,49 @@ def update_historical_pair_data(set_percentage, log_text):
     set_percentage(100)
 
 def get_historical_pair_data(pair, from_datetime, to_datetime):
-    pass
+    if from_datetime > to_datetime:
+        return None
+
+    timestamp_lower = datetime.timestamp(from_datetime)
+    timestamp_higher = datetime.timestamp(to_datetime)
+    # print(timestamp_higher)
+        # raise Exception('from_datetime > to_datetime!')
+    pair_data_path = os.path.join(pair_data_directory, pair)
+    pair_data_list = os.listdir(pair_data_path)
+
+    filtered_array_list = []
+
+    for year in range(from_datetime.year, to_datetime.year+1):
+        # Check year data first
+
+        substring = '_'+str(year)+'.npy'
+        strings_with_substring = [string for string in pair_data_list if substring in string]
+        # Full year
+        if len(strings_with_substring):
+            # print()
+            filename = strings_with_substring[0]
+            with open(os.path.join(pair_data_path, filename), 'rb') as f:
+                year_array = np.load(f)
+                filtered_array = year_array[year_array['f0']>=timestamp_lower]
+                filtered_array = filtered_array[filtered_array['f0']<=timestamp_higher]
+                # print(filtered_array)
+                filtered_array_list.append(filtered_array)
+        # Month
+        else:
+            month = 1
+            while (year == to_datetime.year and month<=to_datetime.month) or (year < to_datetime.year and month<=12):
+                substring = '_'+str(year)+str(month).zfill(2)+'.npy'
+                strings_with_substring = [string for string in pair_data_list if substring in string]
+                if len(strings_with_substring):
+                    filename = strings_with_substring[0]
+                    with open(os.path.join(pair_data_path, filename), 'rb') as f:
+                        month_array = np.load(f)
+                        filtered_array = month_array[month_array['f0']>=timestamp_lower]
+                        filtered_array = filtered_array[filtered_array['f0']<=timestamp_higher]
+                        # print(filtered_array)
+                        filtered_array_list.append(filtered_array)
+                    month += 1
+                else:
+                    break
+
+    return np.concatenate(filtered_array_list)

@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+from datetime import datetime
 from coin_wizard.historical_pair_data import get_historical_pair_data
+# import state manager
 
 class TradingAgent(object):
     def __init__(self, agent_directory):
@@ -13,7 +15,7 @@ class TradingAgent(object):
         pass
 
     def train(self):
-        get_historical_pair_data('eurusd')
+        print(get_historical_pair_data('eurusd', datetime(2002, 5, 17), datetime(2021, 1, 17)))
 
     def stop_training():
         pass
