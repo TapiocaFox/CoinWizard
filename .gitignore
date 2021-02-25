@@ -31,6 +31,8 @@ Temporary Items
 # Coin wizard
 temp/
 pair_data/
+trading_agent_files/
+states.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

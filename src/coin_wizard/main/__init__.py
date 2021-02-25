@@ -16,17 +16,34 @@ print('-')
 cwd = os.getcwd()
 print('Current working directory:', cwd)
 
+states = {
+    "latest_historical_pair_data_update": "no record"
+}
 settings = None
+
+if not os.path.exists('trading_agent_files'):
+    os.makedirs('trading_agent_files')
 
 with open('settings.json') as settings_file:
     settings = json.load(settings_file)
 
-def test(num):
-    pass
-
 def save_settings():
     with open('settings.json', 'w') as outfile:
         json.dump(settings, outfile)
+
+def save_states():
+    with open('states.json', 'w') as outfile:
+        json.dump(states, outfile)
+
+if not os.path.exists('states.json'):
+    save_states()
+else:
+    with open('states.json') as states_file:
+        states = json.load(states_file)
+
+def test(num):
+    pass
+
 
 trading_agent_mode = "STOP"
 
@@ -53,12 +70,12 @@ def start():
     global trading_agent
     while True:
         selections = [
-            (0, 'Run    trading agent'),
-            (1, 'Train  trading agent'),
+            (0, 'Run    trading agent.'),
+            (1, 'Train  trading agent.'),
             (2, 'Test   trading agent by backtesting with historical pair data.'),
             (3, 'Change trading agent.'),
-            (10, 'Plot   historical pair data'),
-            (11, 'Update historical pair data'),
+            (10, 'Plot   historical pair data.'),
+            (11, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             (99, 'Leave'),
         ]
         answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \n', values = selections).run()
@@ -93,10 +110,11 @@ def start():
         elif answer == 11:
             progress_dialog(
                 title="Updating historical data",
-                text= datetime.now().strftime("Today's date in your timezone: %Y %b %d."),
+                text= datetime.now().strftime("Today's date in your timezone: %Y %m %d."),
                 run_callback=update_historical_pair_data,
             ).run()
-            # break
+            states['latest_historical_pair_data_update'] = datetime.now().strftime("%Y,%m,%d, %H:%M:%S")
+            save_states()
 
         elif answer == 10:
             pass
