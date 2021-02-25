@@ -3,12 +3,11 @@
 from coin_wizard.historical_pair_data import get_historical_pair_data
 
 class TradingAgent(object):
-    def __init__(self, APIs):
-        self.APIs = APIs
+    def __init__(self, agent_directory):
+        print(agent_directory)
 
     def run(self, brokerAPI):
-        print(self.APIs)
-        self.APIs['test'](123)
+        pass
 
     def stop_running():
         pass
@@ -19,9 +18,10 @@ class TradingAgent(object):
     def stop_training():
         pass
 
-    def test(self, brokerAPI):
+    def test(self, BacktestBrokerAPI):
+        # BacktestBrokerAPI.start()
         # print(self.APIs)
-        self.APIs['test'](123)
+        pass
 
     def stop_testing():
         pass

@@ -21,8 +21,8 @@ states = {
 }
 settings = None
 
-if not os.path.exists('trading_agent_files'):
-    os.makedirs('trading_agent_files')
+if not os.path.exists('trading_agents_files'):
+    os.makedirs('trading_agents_files')
 
 with open('settings.json') as settings_file:
     settings = json.load(settings_file)
@@ -60,8 +60,9 @@ def stop_agent():
 def create_agent(trading_agent_name):
     trading_agent_module = __import__(trading_agent_name)
     print('Selected trading agent:', trading_agent_module)
-    return trading_agent_module.TradingAgent({
-    'test': test})
+    if not os.path.exists(os.path.join(cwd, 'trading_agents_files', trading_agent_name)):
+        os.makedirs(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
+    return trading_agent_module.TradingAgent(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
 
 
 trading_agent = create_agent(settings['trading_agent'])
