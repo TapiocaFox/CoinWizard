@@ -1,0 +1,137 @@
+#!/usr/bin/python3
+import csv, os
+import numpy as np
+
+from datetime import datetime
+from coin_wizard.historical_pair_data_fetcher import download_hist_data
+from coin_wizard.historical_pair_data_fetcher.api import Platform, TimeFrame
+from zipfile import ZipFile
+from numpy import genfromtxt
+
+temp_directory = './temp'
+platform = Platform.GENERIC_ASCII
+time_frame = TimeFrame.ONE_MINUTE
+
+def remove_directory_files(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+def update_a_historical_pair_data(output_directory, year="2016", month=None, pair="eurusd", download_again=False):
+    # Determine filename
+    if month is None:
+        output_filename = 'DAT_{}_{}_{}_{}.npy'.format(platform, pair.upper(), time_frame, str(year))
+    else:
+        output_filename = 'DAT_{}_{}_{}_{}.npy'.format(platform, pair.upper(), time_frame, '{}{}'.format(year, str(month).zfill(2)))
+
+    output_file_path = os.path.join(output_directory, output_filename)
+
+    # Prevent re-download
+    if os.path.exists(output_file_path) and download_again == False:
+        return output_file_path
+
+    # Makedir clear temp files
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    if not os.path.exists(temp_directory):
+        os.makedirs(temp_directory)
+    remove_directory_files(temp_directory)
+
+    temp_filename = download_hist_data(year=year,month=month,pair=pair, output_directory=temp_directory, platform=platform, time_frame=time_frame, verbose=False)
+
+    # Unzip temp files
+    with ZipFile(temp_filename, 'r') as zipObj:
+        # Extract all the contents of zip file in temp directory
+        zipObj.extractall(temp_directory)
+
+    # Covert temp files
+    for filename in os.listdir(temp_directory):
+        # Find csv then covert to numpy
+        if '.csv' in filename:
+            date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S'))
+            nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=(int, float, float, float, float), usecols=(0, 1, 2, 3, 4))
+            # print(nparray)
+
+            with open(output_file_path, 'wb') as f:
+                np.save(f, nparray)
+            break
+    return output_file_path
+
+def update_historical_pair_data(set_percentage, log_text):
+    set_percentage(0)
+    log_text('Updating...\n')
+
+    year_now = datetime.now().year
+    month_now = datetime.now().month
+
+    with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        next(reader, None)
+
+        total_row_count = 0
+
+        # count total
+        with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f2:
+            reader_counter = csv.reader(f2, delimiter=',')
+            total_row_count = sum(1 for row in reader_counter)-1
+
+        for row_index, row in enumerate(reader):
+            set_percentage(0)
+            currency_pair_name, pair, history_first_trading_date = row
+            history_first_trading_year = int(history_first_trading_date[0:4])
+            year = history_first_trading_year
+            percentage_per_year = 100/(datetime.now().year - year + 1)
+            log_text('Updating ' + currency_pair_name + '.\n')
+            output_directory = 'pair_data/'+pair
+            try:
+                while True:
+                    could_download_full_year = False
+                    try:
+                        log_text('Downloading pair: '+currency_pair_name+', year: '+str(year)+'. ')
+                        update_a_historical_pair_data(year=str(year),
+                                                      pair=pair,
+                                                      output_directory=output_directory)
+                        log_text('Downloaded.\n')
+                        could_download_full_year = True
+                    except AssertionError:
+                        log_text('Downloading by month.\n')  # lets download it month by month.
+                    month_count = 12
+                    if year == year_now:
+                        month_count = month_now
+                    month = 1
+                    while not could_download_full_year and month <= 12:
+                        if month > month_count:
+                            raise
+                        log_text('Downloading pair: '+currency_pair_name+', year: '+str(year)+', month: '+str(month)+'. ')
+                        try:
+                            update_a_historical_pair_data(year=str(year),
+                                                          month=str(month),
+                                                          pair=pair,
+                                                          output_directory=output_directory,
+                                                          download_again=True)
+                        except Exception:
+                            log_text('Skiped.\n')
+                            raise
+                        log_text('Downloaded.\n')
+
+                        set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1)-1) + (percentage_per_year/month_count)*month))
+                        month += 1
+
+                    set_percentage(int(percentage_per_year*(year-(history_first_trading_year-1))))
+                    year += 1
+            except Exception as e:
+                # print(e)
+                set_percentage(100)
+                log_text('Done for currency '+  currency_pair_name+ '(' + str(row_index+1) +'/'+str(total_row_count)+').\n\n')
+
+    log_text('Finished.\n')
+    set_percentage(100)
+
+def get_historical_pair_data(pair, from_datetime, to_datetime):
+    pass

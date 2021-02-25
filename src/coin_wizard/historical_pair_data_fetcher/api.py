@@ -1,12 +1,11 @@
+#!/usr/bin/python3
+
 import os
 import shutil
 import requests
-import numpy as np
 
 from datetime import datetime
-from zipfile import ZipFile
 from bs4 import BeautifulSoup
-from numpy import genfromtxt
 
 class TimeFrame:
     ONE_MINUTE = 'M1'
@@ -95,18 +94,6 @@ def download_hist_data(year='2016',
     :param output_directory: Where to dump the data.
     :return: ZIP Filename.
     """
-    # Check if file already exists.
-    if month is None:
-        output_filename = 'DAT_{}_{}_{}_{}'.format(
-            platform, pair.upper(), time_frame, str(year))
-    else:
-        output_filename = 'DAT_{}_{}_{}_{}'.format(platform, pair.upper(), time_frame,
-                                                   '{}{}'.format(year, str(month).zfill(2)))
-    output_file_path = os.path.join(output_directory, output_filename + '.npy')
-
-
-    if os.path.exists(output_file_path) and download_again == False:
-        return output_file_path
 
     tick_data = time_frame.startswith('T')
     if (not tick_data) and ((int(year) >= datetime.now().year and month is None) or
@@ -157,37 +144,19 @@ def download_hist_data(year='2016',
         print(data)
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
-    if not os.path.exists('./temp'):
-        os.makedirs('./temp')
-    remove_folder_files('./temp')
-
-    output_temp_file_path = os.path.join('./temp', output_filename + '.zip')
-    with open(output_temp_file_path, 'wb') as f:
+    if month is None:
+        output_filename = 'DAT_{}_{}_{}_{}.zip'.format(platform, pair.upper(), time_frame, str(year))
+    else:
+        output_filename = 'DAT_{}_{}_{}_{}.zip'.format(platform, pair.upper(), time_frame,
+                                                       '{}{}'.format(year, str(month).zfill(2)))
+    output_filename = os.path.join(output_directory, output_filename)
+    with open(output_filename, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
     if verbose:
-        print('Wrote to {}'.format(output_temp_file_path))
-
-    with ZipFile(output_temp_file_path, 'r') as zipObj:
-        # Extract all the contents of zip file in temp directory
-        zipObj.extractall('./temp')
-
-    for filename in os.listdir('./temp'):
-        # Find csv then covert to numpy
-        if '.csv' in filename:
-
-            if platform == Platform.GENERIC_ASCII:
-                date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S'))
-                nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=(int, float, float, float, float), usecols=(0, 1, 2, 3, 4))
-                # print(nparray)
-
-                with open(output_file_path, 'wb') as f:
-                    np.save(f, nparray)
-            break
-
-
-    return output_file_path
+        print('Wrote to {}'.format(output_filename))
+    return output_filename
 
 
 if __name__ == '__main__':
