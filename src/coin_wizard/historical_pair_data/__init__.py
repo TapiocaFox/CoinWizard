@@ -181,3 +181,6 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
                     break
 
     return np.concatenate(filtered_array_list)
+
+def get_historical_pair_data_pandas(pair, from_datetime, to_datetime):
+    pass

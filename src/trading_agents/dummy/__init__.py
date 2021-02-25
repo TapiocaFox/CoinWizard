@@ -15,7 +15,7 @@ class TradingAgent(object):
         pass
 
     def train(self):
-        print(get_historical_pair_data('eurusd', datetime(2002, 5, 17), datetime(2021, 1, 17)))
+        quotes = get_historical_pair_data('eurusd', datetime(2018, 5, 17), datetime(2021, 1, 17))
 
     def stop_training():
         pass
