@@ -113,7 +113,7 @@ def start():
         questions = [
             (0, 'Run    trading agent'),
             (1, 'Train  trading agent'),
-            (2, 'Test   trading agent by simulation with historical pair data.'),
+            (2, 'Test   trading agent by backtesting with historical pair data.'),
             (3, 'Change trading agent.'),
             (10, 'Plot   historical pair data'),
             (11, 'Update historical pair data'),
@@ -124,6 +124,8 @@ def start():
         if answer == 99:
             print('Good bye!')
             break
+        elif answer == 3:
+            print(os.listdir('./trading_agents'))
         elif answer == 11:
             progress_dialog(
                 title="Updating historical data",
