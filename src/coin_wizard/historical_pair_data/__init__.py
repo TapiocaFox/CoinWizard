@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 import csv, os
 import numpy as np
+import pandas as pd
 
+from dateutil import parser
 from datetime import datetime
 from coin_wizard.historical_pair_data_fetcher import download_hist_data
 from coin_wizard.historical_pair_data_fetcher.api import Platform, TimeFrame
@@ -55,10 +57,9 @@ def update_a_historical_pair_data(output_directory, year="2016", month=None, pai
     for filename in os.listdir(temp_directory):
         # Find csv then covert to numpy
         if '.csv' in filename:
-            date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S'))
+            date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S').replace(tzinfo=timezone.tzname('UTC-05:00')))
             nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=(int, float, float, float, float), usecols=(0, 1, 2, 3, 4))
             # print(nparray.shape)
-
             with open(output_file_path, 'wb') as f:
                 np.save(f, nparray)
             break
@@ -116,8 +117,9 @@ def update_historical_pair_data(set_percentage, log_text):
                                                           pair=pair,
                                                           output_directory=output_directory,
                                                           download_again=True)
-                        except Exception:
-                            log_text('Skiped.\n')
+                        except Exception as e:
+                            log_text(str(e))
+                            log_text('\nSkiped.\n')
                             raise
                         log_text('Downloaded.\n')
 
@@ -183,4 +185,8 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
     return np.concatenate(filtered_array_list)
 
 def get_historical_pair_data_pandas(pair, from_datetime, to_datetime):
-    pass
+    a = get_historical_pair_data(pair, from_datetime, to_datetime)
+    print(a)
+    df =  pd.DataFrame(a)
+    df['f0']= pd.to_datetime(df['f0'], unit='s')
+    return df
