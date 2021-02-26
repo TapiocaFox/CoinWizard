@@ -224,4 +224,5 @@ def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone=
         title='Historical chart of "'+pair+'". In "'+target_timezone+'" timezone.',
         yaxis_title=pair
     )
+    # fig.update_yaxes(autorange=True)
     fig.show()

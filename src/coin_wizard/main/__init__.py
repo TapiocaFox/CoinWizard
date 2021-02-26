@@ -36,7 +36,21 @@ cwd = os.getcwd()
 print('Current working directory:', cwd)
 
 states = {
-    "latest_historical_pair_data_update": "no record"
+    "latest_historical_pair_data_update": "no record",
+    "latest_plot_settings": {
+        "pair": "eurusd",
+        "timezone": "US/Eastern",
+
+        "from_timezone": "US/Eastern",
+        "from_year": "2016",
+        "from_month": "6",
+        "from_day": "1",
+
+        "to_timezone": "US/Eastern",
+        "to_year": "2016",
+        "to_month": "6",
+        "to_day": "1"
+    }
 }
 settings = None
 
@@ -95,7 +109,8 @@ def start():
             (2, 'Test   trading agent by backtesting with historical pair data.'),
             (3, 'Change trading agent.'),
             (10, 'Plot   historical pair data.'),
-            (11, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
+            (11, 'Plot   latest historical pair data.'),
+            (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             (99, 'Leave'),
         ]
         answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \n', values = selections).run()
@@ -129,24 +144,46 @@ def start():
 
         elif answer == 10:
             print('\n=== "Plot historical pair data" settings ===\n')
-            pair = session.prompt("  Pair: ", default="eurusd")
-            timezone = session.prompt("  Output Timezone: ", default="US/Eastern")
+            states["latest_plot_settings"]["pair"] = pair = session.prompt("  Pair: ", default=str(states["latest_plot_settings"]["pair"]))
+            states["latest_plot_settings"]["timezone"] = timezone = session.prompt("  Output Timezone: ", default=str(states["latest_plot_settings"]["timezone"]))
             print('\n  From date (Timezone/Year/Month/Day):')
-            from_timezone = pytz.timezone(session.prompt("    Timezone: ", default="US/Eastern"))
-            from_year = int(session.prompt("    Year: ", default="2016"))
-            from_month = int(session.prompt("    Month: ", default="6"))
-            from_day = int(session.prompt("    Day: ", default="1"))
+            states["latest_plot_settings"]["from_timezone"] = session.prompt("    Timezone: ", default=str(states["latest_plot_settings"]["from_timezone"]))
+            from_timezone = pytz.timezone(states["latest_plot_settings"]["from_timezone"])
+            states["latest_plot_settings"]["from_year"] = from_year = int(session.prompt("    Year: ", default=str(states["latest_plot_settings"]["from_year"])))
+            states["latest_plot_settings"]["from_month"] = from_month = int(session.prompt("    Month: ", default=str(states["latest_plot_settings"]["from_month"])))
+            states["latest_plot_settings"]["from_day"] = from_day = int(session.prompt("    Day: ", default=str(states["latest_plot_settings"]["from_day"])))
             print('\n  To date (Timezone/Year/Month/Day):')
-            to_timezone = pytz.timezone(session.prompt("    Timezone: ", default="US/Eastern"))
-            to_year = int(session.prompt("    Year: ", default="2016"))
-            to_month = int(session.prompt("    Month: ", default="6"))
-            to_day = int(session.prompt("    Day: ", default="1"))
+            states["latest_plot_settings"]["to_timezone"] = session.prompt("    Timezone: ", default=str(states["latest_plot_settings"]["to_timezone"]))
+            to_timezone = pytz.timezone(states["latest_plot_settings"]["to_timezone"])
+            states["latest_plot_settings"]["to_year"] = to_year = int(session.prompt("    Year: ", default=str(states["latest_plot_settings"]["to_year"])))
+            states["latest_plot_settings"]["to_month"] = to_month = int(session.prompt("    Month: ", default=str(states["latest_plot_settings"]["to_month"])))
+            states["latest_plot_settings"]["to_day"] = to_day = int(session.prompt("    Day: ", default=str(states["latest_plot_settings"]["to_day"])))
+            save_states()
             print('')
             print('Ploting...')
             plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 23, 59)), timezone)
             print('Ploted.')
 
         elif answer == 11:
+            pair = states["latest_plot_settings"]["pair"]
+            timezone = states["latest_plot_settings"]["timezone"]
+
+            from_timezone = pytz.timezone(states["latest_plot_settings"]["from_timezone"])
+            from_year = int(states["latest_plot_settings"]["from_year"])
+            from_month = int(states["latest_plot_settings"]["from_month"])
+            from_day = int(states["latest_plot_settings"]["from_day"])
+
+            to_timezone = pytz.timezone(states["latest_plot_settings"]["to_timezone"])
+            to_year = int(states["latest_plot_settings"]["to_year"])
+            to_month = int(states["latest_plot_settings"]["to_month"])
+            to_day = int(states["latest_plot_settings"]["to_day"])
+
+            print('')
+            print('Ploting...')
+            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 23, 59)), timezone)
+            print('Ploted.')
+
+        elif answer == 12:
             progress_dialog(
                 title="Updating historical data",
                 text= datetime.now().strftime("Today's date in your timezone: %Y %m %d."),
