@@ -104,9 +104,9 @@ def start():
     global trading_agent
     while True:
         selections = [
-            (0, 'Run    trading agent.'),
-            (1, 'Train  trading agent.'),
-            (2, 'Test   trading agent by backtesting with historical pair data.'),
+            (0, '[x] Run    trading agent.'),
+            (1, '[x] Train  trading agent.'),
+            (2, '[x] Test   trading agent by backtesting with historical pair data.'),
             (3, 'Change trading agent.'),
             (4, '[x] Change broker platform.'),
             (5, '[x] Plot   broker platform realtime pair data.'),
