@@ -69,7 +69,13 @@ def update_a_historical_pair_data(output_directory, year="2016", month=None, pai
             break
     return output_file_path
 
-def update_historical_pair_data(set_percentage, log_text):
+def set_percentage_prevent():
+    pass
+
+def log_text_prevent():
+    pass
+
+def update_historical_pair_data(set_percentage=set_percentage_prevent, log_text=log_text_prevent):
     set_percentage(0)
     log_text('Updating...\n')
 
