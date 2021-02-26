@@ -108,12 +108,14 @@ def start():
             (1, 'Train  trading agent.'),
             (2, 'Test   trading agent by backtesting with historical pair data.'),
             (3, 'Change trading agent.'),
+            (4, 'Change broker platform.'),
+            (5, 'Plot   broker platform realtime pair data.'),
             (10, 'Plot   historical pair data.'),
             (11, 'Plot   latest historical pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             (99, 'Leave'),
         ]
-        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \n', values = selections).run()
+        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \nBroker platform()', values = selections).run()
 
         if answer == 99:
             print('Good bye!')
