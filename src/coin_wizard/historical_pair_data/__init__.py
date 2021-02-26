@@ -2,6 +2,8 @@
 import csv, os
 import numpy as np
 import pandas as pd
+import pytz
+import plotly.graph_objects as go
 
 from dateutil import parser
 from datetime import datetime
@@ -14,6 +16,8 @@ temp_directory = './temp'
 platform = Platform.GENERIC_ASCII
 time_frame = TimeFrame.ONE_MINUTE
 pair_data_directory = 'pair_data/'
+eastern = pytz.timezone('US/Eastern')
+utc = pytz.utc
 
 def remove_directory_files(directory):
     for filename in os.listdir(directory):
@@ -57,8 +61,8 @@ def update_a_historical_pair_data(output_directory, year="2016", month=None, pai
     for filename in os.listdir(temp_directory):
         # Find csv then covert to numpy
         if '.csv' in filename:
-            date_convert = lambda x: datetime.timestamp(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S').replace(tzinfo=timezone.tzname('UTC-05:00')))
-            nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=(int, float, float, float, float), usecols=(0, 1, 2, 3, 4))
+            date_convert = lambda x: (eastern.localize(datetime.strptime(str(x, 'utf-8'), '%Y%m%d %H%M%S'))).timestamp()
+            nparray = genfromtxt('./temp/'+filename, delimiter=';', converters={0: date_convert}, dtype=[('utc_timestamp', int), ('open', float), ('high', float), ('low', float), ('close', float)], usecols=(0, 1, 2, 3, 4))
             # print(nparray.shape)
             with open(output_file_path, 'wb') as f:
                 np.save(f, nparray)
@@ -160,8 +164,8 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
             filename = strings_with_substring[0]
             with open(os.path.join(pair_data_path, filename), 'rb') as f:
                 year_array = np.load(f)
-                filtered_array = year_array[year_array['f0']>=timestamp_lower]
-                filtered_array = filtered_array[filtered_array['f0']<=timestamp_higher]
+                filtered_array = year_array[year_array['utc_timestamp']>=timestamp_lower]
+                filtered_array = filtered_array[filtered_array['utc_timestamp']<=timestamp_higher]
                 # print(filtered_array)
                 filtered_array_list.append(filtered_array)
         # Month
@@ -174,8 +178,8 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
                     filename = strings_with_substring[0]
                     with open(os.path.join(pair_data_path, filename), 'rb') as f:
                         month_array = np.load(f)
-                        filtered_array = month_array[month_array['f0']>=timestamp_lower]
-                        filtered_array = filtered_array[filtered_array['f0']<=timestamp_higher]
+                        filtered_array = month_array[month_array['utc_timestamp']>=timestamp_lower]
+                        filtered_array = filtered_array[filtered_array['utc_timestamp']<=timestamp_higher]
                         # print(filtered_array)
                         filtered_array_list.append(filtered_array)
                     month += 1
@@ -184,9 +188,18 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
 
     return np.concatenate(filtered_array_list)
 
-def get_historical_pair_data_pandas(pair, from_datetime, to_datetime):
-    a = get_historical_pair_data(pair, from_datetime, to_datetime)
-    print(a)
-    df =  pd.DataFrame(a)
-    df['f0']= pd.to_datetime(df['f0'], unit='s')
-    return df
+def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone='UTC'):
+    df =  pd.DataFrame(get_historical_pair_data(pair, from_datetime, to_datetime))
+    df['utc_timestamp']= pd.DatetimeIndex(pd.to_datetime(df['utc_timestamp'], unit='s')).tz_localize('UTC').tz_convert(target_timezone)
+    df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
+    print(df_new)
+    return df_new
+
+def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
+    quotes = get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone)
+    fig = go.Figure(data=[go.Candlestick(x=quotes['timestamp'],
+            open=quotes['open'],
+            high=quotes['high'],
+            low=quotes['low'],
+            close=quotes['close'])])
+    fig.show()
