@@ -6,20 +6,21 @@ sys.path.append('./trading_agents')
 
 from datetime import datetime
 
-from coin_wizard.historical_pair_data import update_historical_pair_data
+from coin_wizard.historical_pair_data import update_historical_pair_data, plot_historical_pair_data, get_historical_pair_list
 from coin_wizard.main.event_manager import EventManager
-from coin_wizard.historical_pair_data import plot_historical_pair_data
 
 from prompt_toolkit.shortcuts import radiolist_dialog, progress_dialog, input_dialog
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory
 
-eastern = pytz.timezone('US/Eastern')
 prompt_history = InMemoryHistory()
 
 for tz in pytz.all_timezones:
     prompt_history.append_string(tz)
+
+for pair in get_historical_pair_list():
+    prompt_history.append_string(pair)
 
 session = PromptSession(
     history=prompt_history,
@@ -127,20 +128,23 @@ def start():
             save_settings()
 
         elif answer == 10:
-            print('\n=== Plot historical pair data ===\n')
-            pair = session.prompt("Pair: ", default="eurusd")
-            timezone = session.prompt("Output Timezone: ", default="US/Eastern")
-            print('\nFrom date (Timezone/Year/Month/Day):')
-            from_timezone = session.prompt("Timezone: ", default="US/Eastern")
-            from_year = int(session.prompt("Year: ", default="2016"))
-            from_month = int(session.prompt("Month: ", default="1"))
-            from_day = int(session.prompt("Day: ", default="1"))
-            print('\nTo date (Timezone/Year/Month/Day):')
-            to_timezone = session.prompt("Timezone: ", default="US/Eastern")
-            to_year = int(session.prompt("Year: ", default="2016"))
-            to_month = int(session.prompt("Month: ", default="1"))
-            to_day = int(session.prompt("Day: ", default="2"))
-            plot_historical_pair_data(pair, eastern.localize(datetime(from_year, from_month, from_day, 0, 0)), eastern.localize(datetime(to_year, to_month, to_day, 23, 59)), timezone)
+            print('\n=== "Plot historical pair data" settings ===\n')
+            pair = session.prompt("  Pair: ", default="eurusd")
+            timezone = session.prompt("  Output Timezone: ", default="US/Eastern")
+            print('\n  From date (Timezone/Year/Month/Day):')
+            from_timezone = pytz.timezone(session.prompt("    Timezone: ", default="US/Eastern"))
+            from_year = int(session.prompt("    Year: ", default="2016"))
+            from_month = int(session.prompt("    Month: ", default="6"))
+            from_day = int(session.prompt("    Day: ", default="1"))
+            print('\n  To date (Timezone/Year/Month/Day):')
+            to_timezone = pytz.timezone(session.prompt("    Timezone: ", default="US/Eastern"))
+            to_year = int(session.prompt("    Year: ", default="2016"))
+            to_month = int(session.prompt("    Month: ", default="6"))
+            to_day = int(session.prompt("    Day: ", default="1"))
+            print('')
+            print('Ploting...')
+            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 23, 59)), timezone)
+            print('Ploted.')
 
         elif answer == 11:
             progress_dialog(

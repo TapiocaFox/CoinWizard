@@ -75,6 +75,18 @@ def set_percentage_prevent():
 def log_text_prevent():
     pass
 
+pair_list = []
+
+with open(os.path.dirname(__file__)+'/../historical_pair_data_fetcher/pairs.csv', 'r') as f:
+    reader = csv.reader(f, delimiter=',')
+    next(reader, None)
+    for row in reader:
+        currency_pair_name, pair, history_first_trading_date = row
+        pair_list.append(pair)
+
+def get_historical_pair_list():
+    return pair_list
+
 def update_historical_pair_data(set_percentage=set_percentage_prevent, log_text=log_text_prevent):
     set_percentage(0)
     log_text('Updating...\n')
@@ -198,7 +210,7 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
     df =  pd.DataFrame(get_historical_pair_data(pair, from_datetime, to_datetime))
     df['utc_timestamp']= pd.DatetimeIndex(pd.to_datetime(df['utc_timestamp'], unit='s')).tz_localize('UTC').tz_convert(target_timezone)
     df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
-    print(df_new)
+    # print(df_new)
     return df_new
 
 def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
@@ -208,4 +220,8 @@ def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone=
             high=quotes['high'],
             low=quotes['low'],
             close=quotes['close'])])
+    fig.update_layout(
+        title='Historical chart of "'+pair+'". In "'+target_timezone+'" timezone.',
+        yaxis_title=pair
+    )
     fig.show()
