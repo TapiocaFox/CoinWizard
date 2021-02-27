@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-SupportedPairs = [
+SupportedInstruments = [
     "eurusd",
     "eurchf",
     "eurgbp",
