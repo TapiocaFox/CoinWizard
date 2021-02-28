@@ -3,19 +3,14 @@
 
 class Order(object):
     def __init__(self):
-        pass
-
-    def onFilled(self, filled_listener):
-        pass
-
-    def onCanceled(self, canceled_listener):
-        pass
+        self.filled_listener = None
+        self.canceled_listener = None
 
     def cancel(self):
         pass
 
-    def __emit_filled(self):
-        pass
+    def onFilled(self, filled_listener):
+        self.filled_listener = filled_listener
 
-    def __emit_rejected(self):
-        pass
+    def onCanceled(self, canceled_listener):
+        self.canceled_listener = canceled_listener

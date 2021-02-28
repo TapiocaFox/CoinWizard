@@ -3,25 +3,31 @@
 
 class Account(object):
     def __init__(self):
-        pass
+        self.balance = 0.0
+        self.currency = 'usd'
+        self.margin_rate = 0.2
+        self.margin_used = 0.0
+        self.unrealized_pl = 0.0
+        self.orders = []
+        self.trades = []
 
     def getBalance(self):
-        pass
+        return self.balance
 
     def getCurrency(self):
-        pass
+        return self.currency
 
     def getMarginRate(self):
-        pass
+        return self.margin_rate
 
     def getMarginUsed(self):
-        pass
+        return self.margin_used
 
     def getUnrealizedPL(self):
-        pass
+        return self.unrealized_pl
 
     def getOrders(self):
-        pass
+        return self.orders
 
     def getTrades(self):
-        pass
+        return self.trades

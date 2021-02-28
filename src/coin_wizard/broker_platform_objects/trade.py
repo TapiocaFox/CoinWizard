@@ -3,7 +3,7 @@
 
 class Trade(object):
     def __init__(self):
-        pass
+        self.onclosed_listener = None
 
     def close(self):
         pass
@@ -11,5 +11,5 @@ class Trade(object):
     def modify(self, trade_settings):
         pass
 
-    def onClosed(self, pair_name, listener):
-        pass
+    def onClosed(self, onclosed_listener):
+        self.onclosed_listener = onclosed_listener

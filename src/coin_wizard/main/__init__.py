@@ -3,6 +3,7 @@
 import json, os, sys, pytz
 
 sys.path.append('./trading_agents')
+sys.path.append('./coin_wizard/broker_platforms')
 
 from datetime import datetime
 
@@ -50,8 +51,12 @@ states = {
         "to_year": "2016",
         "to_month": "6",
         "to_day": "1"
+    },
+    "broker_platform_settings_dict": {
+
     }
 }
+
 settings = None
 
 if not os.path.exists('trading_agents_files'):
@@ -62,11 +67,11 @@ with open('settings.json') as settings_file:
 
 def save_settings():
     with open('settings.json', 'w') as outfile:
-        json.dump(settings, outfile)
+        json.dump(settings, outfile, indent=2)
 
 def save_states():
     with open('states.json', 'w') as outfile:
-        json.dump(states, outfile)
+        json.dump(states, outfile, indent=2)
 
 if not os.path.exists('states.json'):
     save_states()
@@ -97,26 +102,43 @@ def create_agent(trading_agent_name):
         os.makedirs(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
     return trading_agent_module.TradingAgent(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
 
+# def create_broker_platform(broker_platform_name):
+#     broker_platform_module = __import__(broker_platform_name)
+#     print('Selected trading agent:', trading_agent_module)
+#     # if not os.path.exists(os.path.join(cwd, 'broker_platforms_files', broker_platform_name)):
+#     #     os.makedirs(os.path.join(cwd, 'broker_platforms_files', broker_platform_name))
+#     return broker_platform_module.TradingAgent()
 
 trading_agent = create_agent(settings['trading_agent'])
+broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
+
+# print(broker_platform_module.broker_settings_fields)
+
+def before_broker_platform_loop():
+    pass
+
+def after_broker_platform_loop():
+    pass
 
 def start():
     global trading_agent
+    global broker_platform_module
     while True:
         selections = [
-            (0, '[x] Run    trading agent.'),
+            (0, 'Run    trading agent.'),
             (1, '[x] Train  trading agent.'),
             (2, '[x] Test   trading agent by backtesting with historical pair data.'),
-            (3, 'Change trading agent.'),
-            (4, '[x] Change broker platform.'),
-            (5, '[x] Plot   broker platform realtime pair data.'),
+            (3, 'Change  trading agent.'),
+            (4, 'Change broker platform.'),
+            (5, 'Set    broker platform settings.'),
+            (6, '[x] Plot   broker platform realtime pair data.'),
             (10, 'Plot   historical pair data.'),
             (11, 'Plot   latest historical pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             (13, '[x] Select which historical pair data to be followed.'),
             (99, 'Leave'),
         ]
-        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \nBroker platform()', values = selections).run()
+        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \nBroker platform(Current: "'+ settings['broker_platform'] +'")', values = selections).run()
 
         if answer == 99:
             print('Good bye!')
@@ -124,7 +146,8 @@ def start():
 
         elif answer == 0:
             trading_agent_mode = "RUN"
-            trading_agent.run("Broker API")
+            broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
+            trading_agent.run(broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings))
             stop_agent()
 
         elif answer == 1:
@@ -139,14 +162,34 @@ def start():
 
         elif answer == 3:
             agent_selections = [(filename, filename) for filename in os.listdir('./trading_agents')]
-            agent_answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \n', values = agent_selections).run()
+            agent_answer = radiolist_dialog(title='Trading agent', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \n', values = agent_selections).run()
+            if agent_answer == None:
+                break
             settings['trading_agent'] = agent_answer
             stop_agent()
             trading_agent = create_agent(agent_answer)
             save_settings()
 
+        elif answer == 4:
+            bp_selections = [(filename, filename) for filename in os.listdir('./coin_wizard/broker_platforms')]
+            bp_answer = radiolist_dialog(title='Broker platform', text='What do you want to do? \Broker platform(Current: "'+ settings['broker_platform'] +'"). \n', values = bp_selections).run()
+            if bp_answer == None:
+                break
+            settings['broker_platform'] = bp_answer
+            broker_platform_module = __import__(bp_answer).BrokerEventLoopAPI
+            save_settings()
+
+        elif answer == 5:
+            bp = settings['broker_platform']
+            bp_settings = {}
+            print('\n=== "Broker platforms(Current: "'+bp+'")" settings ===')
+            for field in broker_platform_module.broker_settings_fields:
+                bp_settings[field] = session.prompt("    "+field + ": ")
+            states["broker_platform_settings_dict"][bp] = bp_settings
+            save_states()
+
         elif answer == 10:
-            print('\n=== "Plot historical pair data" settings ===\n')
+            print('\n=== "Plot historical pair data" settings ===')
             states["latest_plot_settings"]["pair"] = pair = session.prompt("  Pair: ", default=str(states["latest_plot_settings"]["pair"]))
             states["latest_plot_settings"]["timezone"] = timezone = session.prompt("  Output Timezone: ", default=str(states["latest_plot_settings"]["timezone"]))
             print('\n  From date (Timezone/Year/Month/Day):')

@@ -3,10 +3,10 @@
 
 class Instrument(object):
     def __init__(self):
-        pass
-
-    def onPricingChanged(self, changed_listener):
-        pass
+        self.changed_listener = None
 
     def getRecentCandles1M(self, counts=500):
         pass
+
+    def onPricingChanged(self, changed_listener):
+        self.changed_listener = changed_listener

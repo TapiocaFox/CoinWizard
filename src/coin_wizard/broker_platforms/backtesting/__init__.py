@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-import coin_wizard.broker_platform_object as BrokerPlatform
+import coin_wizard.broker_platform_objects as BrokerPlatform
 from time import sleep
-from coin_wizard.broker_platforms.backtest.supported_instruments import SupportedInstruments
+from coin_wizard.broker_platforms.backtesting.supported_instruments import SupportedInstruments
 
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     SupportedInstruments = SupportedInstruments
