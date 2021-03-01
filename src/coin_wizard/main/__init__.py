@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import json, os, sys, pytz
+import json, os, sys, pytz, signal
 
 sys.path.append('./trading_agents')
 sys.path.append('./coin_wizard/broker_platforms')
@@ -111,7 +111,14 @@ def create_agent(trading_agent_name):
 
 trading_agent = create_agent(settings['trading_agent'])
 broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
+broker_platform = None
 
+def signal_handler(signal, frame):
+    print('You pressed Ctrl+C!')
+    if broker_platform!= None:
+        broker_platform._stop()
+
+signal.signal(signal.SIGINT, signal_handler)
 # print(broker_platform_module.broker_settings_fields)
 
 def before_broker_platform_loop():
@@ -123,6 +130,8 @@ def after_broker_platform_loop():
 def start():
     global trading_agent
     global broker_platform_module
+    global broker_platform
+
     while True:
         selections = [
             (0, 'Run    trading agent.'),
@@ -147,7 +156,9 @@ def start():
         elif answer == 0:
             trading_agent_mode = "RUN"
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
-            trading_agent.run(broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings))
+            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            trading_agent.run(broker_platform)
+            broker_platform._run_loop()
             stop_agent()
 
         elif answer == 1:
@@ -164,7 +175,7 @@ def start():
             agent_selections = [(filename, filename) for filename in os.listdir('./trading_agents')]
             agent_answer = radiolist_dialog(title='Trading agent', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \n', values = agent_selections).run()
             if agent_answer == None:
-                break
+                continue
             settings['trading_agent'] = agent_answer
             stop_agent()
             trading_agent = create_agent(agent_answer)
@@ -174,7 +185,7 @@ def start():
             bp_selections = [(filename, filename) for filename in os.listdir('./coin_wizard/broker_platforms')]
             bp_answer = radiolist_dialog(title='Broker platform', text='What do you want to do? \Broker platform(Current: "'+ settings['broker_platform'] +'"). \n', values = bp_selections).run()
             if bp_answer == None:
-                break
+                continue
             settings['broker_platform'] = bp_answer
             broker_platform_module = __import__(bp_answer).BrokerEventLoopAPI
             save_settings()

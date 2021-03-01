@@ -14,7 +14,7 @@ import oandapyV20.endpoints.pricing as pricing
 import oandapyV20.endpoints.transactions as transactions
 
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
-    hedging = False
+    hedging = True
     broker_settings_fields = ['access_token', 'account_id']
     def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms= 50):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
