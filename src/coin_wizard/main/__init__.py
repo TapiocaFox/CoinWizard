@@ -161,6 +161,7 @@ def start():
             print('Running trading agent...')
             trading_agent.run(broker_platform)
             print('Starting broker platform event loop...')
+            print('Press ctrl+c to end loop.')
             broker_platform._run_loop()
             stop_agent()
 
