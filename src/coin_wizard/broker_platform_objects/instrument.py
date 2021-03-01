@@ -8,5 +8,5 @@ class Instrument(object):
     def getRecentCandles1M(self, counts=500):
         pass
 
-    def onPricingChanged(self, changed_listener):
+    def onPriceChanged(self, changed_listener):
         self.changed_listener = changed_listener

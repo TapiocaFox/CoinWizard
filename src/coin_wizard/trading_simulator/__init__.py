@@ -5,7 +5,7 @@ class TradingSimulator(object):
         self.orders = []
         self.trades = []
 
-    def set_new_pricing_and_date(self, instrument_name, pricing, date):
+    def set_new_price_and_date(self, instrument_name, price, date):
         pass
 
     def order(self):

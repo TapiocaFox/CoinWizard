@@ -156,8 +156,11 @@ def start():
         elif answer == 0:
             trading_agent_mode = "RUN"
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
+            print('Initializing broker platform...')
             broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            print('Running trading agent...')
             trading_agent.run(broker_platform)
+            print('Starting broker platform event loop...')
             broker_platform._run_loop()
             stop_agent()
 

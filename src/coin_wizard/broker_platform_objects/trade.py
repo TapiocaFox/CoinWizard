@@ -2,13 +2,33 @@
 #
 
 class Trade(object):
-    def __init__(self):
+    def __init__(self, trade_id, instrument_name, open_price, trade_settings):
+        self.trade_id = trade_id
+        self.instrument_name = instrument_name
+        self.open_price = open_price
+        self.trade_settings = trade_settings
+        # self.price = 0
         self.onclosed_listener = None
 
     def close(self):
-        pass
+        return self.close_handler(self.trade_id)
 
     def modify(self, trade_settings):
+        return self.modify_handler(self.trade_id, trade_settings)
+
+    def getInstrumentName(self):
+        return self.instrument_name
+
+    def getOpenPrice(self):
+        return self.open_price
+
+    def getTradeSettings(self):
+        return self.trade_settings
+
+    # def getPrice(self):
+    #     return self.price
+
+    def getUnrealizedPL(self):
         pass
 
     def onClosed(self, onclosed_listener):

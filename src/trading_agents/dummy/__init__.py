@@ -14,7 +14,15 @@ class TradingAgent(object):
         print(agent_directory)
 
     def run(self, brokerAPI):
-        pass
+        account = brokerAPI.getAccount()
+        orders = account.getOrders()
+        trades = account.getTrades()
+
+        for order in orders:
+            print(order.getInstrumentName(), order.getOrderSettings(), order.getTradeSettings())
+
+        for trade in trades:
+            print(trade.getInstrumentName(), trade.getTradeSettings())
 
     def stop_running():
         pass

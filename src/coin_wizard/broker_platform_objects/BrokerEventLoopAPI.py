@@ -22,7 +22,7 @@ class BrokerEventLoopAPI(object):
         pass
 
     def getAccount(self):
-        pass
+        return self.account
 
     def onLoop(self, loop_listener):
         self.loop_listener = loop_listener

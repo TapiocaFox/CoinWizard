@@ -7,6 +7,7 @@ class Account(object):
         self.currency = 'usd'
         self.margin_rate = 0.2
         self.margin_used = 0.0
+        self.margin_available = 0.0
         self.unrealized_pl = 0.0
         self.orders = []
         self.trades = []
