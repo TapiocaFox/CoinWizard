@@ -88,7 +88,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 rv = self.oanda_api.request(r)
                 trade_settings['trailing_stop_distance'] = rv['order']['distance']
 
-            print(json.dumps(trade_detail, indent=2))
+            # print(json.dumps(trade_detail, indent=2))
 
             trade = BrokerPlatform.Trade(trade_detail['id'], trade_detail['instrument'], trade_detail['price'], trade_settings)
 
