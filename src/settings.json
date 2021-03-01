@@ -1,4 +1,4 @@
 {
-  "trading_agent": "dummy",
+  "trading_agent": "panel",
   "broker_platform": "oanda"
 }
