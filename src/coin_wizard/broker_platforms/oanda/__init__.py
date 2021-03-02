@@ -17,7 +17,7 @@ from oandapyV20.contrib.requests import MarketOrderRequest
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['access_token', 'account_id']
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 100):
+    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 500):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
         self.oanda_api = API(access_token=broker_settings['access_token'])
         self.account_id = broker_settings['account_id']

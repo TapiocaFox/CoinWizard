@@ -25,6 +25,7 @@ class TradingAgent(object):
         # print(datetime.now().timestamp()-timestamp.timestamp())
 
     def _run_loop(self, BrokerAPI):
+        pass
         print(BrokerAPI.getAccount().getUnrealizedPL())
         # print(123)
 

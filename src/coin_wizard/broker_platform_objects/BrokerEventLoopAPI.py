@@ -42,8 +42,8 @@ class BrokerEventLoopAPI(object):
         self.loop_listener(self)
         self.after_loop()
         end_loop_timeStamp = datetime.now().timestamp()
-        time_passed_ms = end_loop_timeStamp - self.latest_loop_datetime.timestamp()
-        # print('time_passed_ms', time_passed_ms)
+        time_passed_ms = (end_loop_timeStamp - self.latest_loop_datetime.timestamp())*1000
+        # print('time_passed_ms', time_passed_ms, self.loop_interval_ms)
         if(time_passed_ms < self.loop_interval_ms):
             # print(0.001*self.loop_interval_ms - time_passed_ms)
             time.sleep(0.001*(self.loop_interval_ms - time_passed_ms))
