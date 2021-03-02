@@ -3,11 +3,11 @@
 import time
 from datetime import datetime
 
-def dummp_func():
+def dummp_func(BrokerAPI):
     pass
 
 class BrokerEventLoopAPI(object):
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms= 50):
+    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms= 150):
         self.before_loop = before_loop
         self.after_loop = after_loop
         self.latest_loop_datetime = None
@@ -15,7 +15,7 @@ class BrokerEventLoopAPI(object):
         self.loop_interval_ms = loop_interval_ms
         self.stopped = True
 
-    def order(self, order_settings, trade_settings):
+    def order(self, instrument_name, order_settings, trade_settings):
         pass
 
     def getInstrument(self, instrument_name):
@@ -39,13 +39,14 @@ class BrokerEventLoopAPI(object):
         # start_loop_timeStamp = datetime.now().timestamp()
         self.before_loop()
         self._loop()
-        self.loop_listener()
+        self.loop_listener(self)
         self.after_loop()
         end_loop_timeStamp = datetime.now().timestamp()
         time_passed_ms = end_loop_timeStamp - self.latest_loop_datetime.timestamp()
+        # print('time_passed_ms', time_passed_ms)
         if(time_passed_ms < self.loop_interval_ms):
             # print(0.001*self.loop_interval_ms - time_passed_ms)
-            time.sleep(0.001*self.loop_interval_ms - time_passed_ms)
+            time.sleep(0.001*(self.loop_interval_ms - time_passed_ms))
 
     def _run_loop(self):
         self.stopped = False

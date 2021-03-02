@@ -5,7 +5,6 @@ import pandas as pd
 import pytz
 import plotly.graph_objects as go
 
-from dateutil import parser
 from datetime import datetime
 from coin_wizard.historical_pair_data_fetcher import download_hist_data
 from coin_wizard.historical_pair_data_fetcher.api import Platform, TimeFrame

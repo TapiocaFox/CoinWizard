@@ -8,12 +8,17 @@ class Trade(object):
         self.open_price = open_price
         self.trade_settings = trade_settings
         # self.price = 0
-        self.onclosed_listener = None
+        self.closed_listener = None
+        self.closed = False
 
     def close(self):
+        if self.closed:
+            raise Exception('Trade already closed.')
         return self.close_handler(self.trade_id)
 
     def modify(self, trade_settings):
+        if self.closed:
+            raise Exception('Trade already closed.')
         return self.modify_handler(self.trade_id, trade_settings)
 
     def getInstrumentName(self):
@@ -28,8 +33,8 @@ class Trade(object):
     # def getPrice(self):
     #     return self.price
 
-    def getUnrealizedPL(self):
+    def getCurrentPriceAndUnrealizedPL(self):
         pass
 
-    def onClosed(self, onclosed_listener):
-        self.onclosed_listener = onclosed_listener
+    def onClosed(self, closed_listener):
+        self.closed_listener = closed_listener

@@ -142,7 +142,7 @@ def start():
             (5, 'Set    broker platform settings.'),
             (6, '[x] Plot   broker platform realtime pair data.'),
             (10, 'Plot   historical pair data.'),
-            (11, 'Plot   latest historical pair data.'),
+            (11, 'Plot   previous historical pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             (13, '[x] Select which historical pair data to be followed.'),
             (99, 'Leave'),
