@@ -2,14 +2,17 @@
 #
 
 class Trade(object):
-    def __init__(self, trade_id, instrument_name, open_price, trade_settings):
+    def __init__(self, trade_id, instrument_name, open_price, trade_settings, update_trade):
         self.trade_id = trade_id
         self.instrument_name = instrument_name
         self.open_price = open_price
         self.trade_settings = trade_settings
-        # self.price = 0
+
+        self.price = open_price
+        self.unrealized_pl = 0
         self.closed_listener = None
         self.closed = False
+        self.update_trade = update_trade
 
     def close(self):
         if self.closed:
@@ -30,11 +33,9 @@ class Trade(object):
     def getTradeSettings(self):
         return self.trade_settings
 
-    # def getPrice(self):
-    #     return self.price
-
     def getCurrentPriceAndUnrealizedPL(self):
-        pass
+        self.update_trade()
+        return {"price": self.price, "unrealized_pl": self.unrealized_pl}
 
     def onClosed(self, closed_listener):
         self.closed_listener = closed_listener

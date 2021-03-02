@@ -7,6 +7,9 @@ class Instrument(object):
 
     def getRecentCandles1M(self, counts=500):
         pass
+        
+    def isTradable(self):
+        pass
 
     def onPriceChanged(self, changed_listener):
         self.changed_listener = changed_listener

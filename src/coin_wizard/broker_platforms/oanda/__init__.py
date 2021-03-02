@@ -3,6 +3,7 @@
 import json, dateutil
 
 import coin_wizard.broker_platform_objects as BrokerPlatform
+from datetime import datetime
 from time import sleep
 
 from oandapyV20 import API
@@ -14,6 +15,8 @@ import oandapyV20.endpoints.transactions as transactions
 
 from oandapyV20.contrib.requests import MarketOrderRequest
 
+account_update_interval_threshold_ms = 10
+
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['access_token', 'account_id']
@@ -21,9 +24,12 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
         self.oanda_api = API(access_token=broker_settings['access_token'])
         self.account_id = broker_settings['account_id']
+        self.instruments_watchlist = {}
+
         self.latest_sync_transaction_id = 0
 
         self.account = BrokerPlatform.Account(self._update_account_handler)
+        self.account.latest_update_datetime = datetime.now()
 
         # Initializing
         # Account
@@ -163,7 +169,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         # print(json.dumps(trade_detail, indent=2))
 
-        trade = BrokerPlatform.Trade(trade_detail['id'], trade_detail['instrument'], trade_detail['price'], trade_settings)
+        trade = BrokerPlatform.Trade(trade_detail['id'], trade_detail['instrument'], trade_detail['price'], trade_settings, self._update_trade_handler)
 
         if "takeProfitOrderID" in trade_detail:
             trade.take_profit_order_id = trade_detail['takeProfitOrderID']
@@ -218,6 +224,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         pass
 
     def _update_account_handler(self):
+        if 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()) < account_update_interval_threshold_ms:
+            # print('skipped.', 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()))
+            return
         r = accounts.AccountSummary(self.account_id)
         rv = self.oanda_api.request(r)
         account = rv['account']
@@ -227,6 +236,18 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         self.account.margin_used = account['marginUsed']
         self.account.margin_available = account['marginAvailable']
         self.account.unrealized_pl = account['unrealizedPL']
+        self.account.latest_update_datetime = datetime.now()
+
+    def _update_trade_handler(self):
+        r = accounts.AccountSummary(self.account_id)
+        rv = self.oanda_api.request(r)
+        account = rv['account']
+        # self.account.balance = account['balance']
+        # self.account.currency = account['currency']
+        # self.account.margin_rate = account['marginRate']
+        # self.account.margin_used = account['marginUsed']
+        # self.account.margin_available = account['marginAvailable']
+        # self.account.unrealized_pl = account['unrealizedPL']
 
     def _loop(self):
         r = transactions.TransactionsSinceID(self.account_id, {"id": self.latest_sync_transaction_id})

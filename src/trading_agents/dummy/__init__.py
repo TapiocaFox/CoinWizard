@@ -17,6 +17,7 @@ class TradingAgent(object):
         print('An order canceled.')
 
     def _order_filled_listener(self, order, trade):
+        print(trade.getOpenPrice())
         print('An order filled.')
 
     def _trade_closed_listener(self, trade, realized_pl, closeout_price, spread, timestamp):
@@ -26,7 +27,7 @@ class TradingAgent(object):
 
     def _run_loop(self, BrokerAPI):
         pass
-        print(BrokerAPI.getAccount().getUnrealizedPL())
+        # print(BrokerAPI.getAccount().getUnrealizedPL())
         # print(123)
 
     def run(self, BrokerAPI):
@@ -34,6 +35,7 @@ class TradingAgent(object):
         orders = account.getOrders()
         trades = account.getTrades()
         print(account.getBalance())
+        print(account.getUnrealizedPL())
         print(orders, trades)
         for order in orders:
             print(order.getInstrumentName(), order.getOrderSettings(), order.getTradeSettings())
