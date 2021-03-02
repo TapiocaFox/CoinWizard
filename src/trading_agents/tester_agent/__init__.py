@@ -30,6 +30,7 @@ class TradingAgent(object):
         # print(BrokerAPI.getAccount().getUnrealizedPL())
         # print(123)
 
+
     def run(self, BrokerAPI):
         account = BrokerAPI.getAccount()
         orders = account.getOrders()
@@ -70,19 +71,19 @@ class TradingAgent(object):
 
         BrokerAPI.onLoop(self._run_loop)
 
-    def stop_running():
-        pass
+    def stop_running(self, BrokerAPI):
+        print('Agent stopped.')
 
-    def train(self):
+
+    def train(self, BrokerAPI):
         plot_historical_pair_data('eurusd', eastern.localize(datetime(2021, 1, 8, 0, 0)), eastern.localize(datetime(2021, 1, 11, 23, 59)), 'US/Eastern')
 
-    def stop_training():
+    def stop_training(self, BrokerAPI):
         pass
+
 
     def test(self, BacktestBrokerAPI):
-        # BacktestBrokerAPI.start()
-        # print(self.APIs)
-        pass
+        self.run(BacktestBrokerAPI)
 
-    def stop_testing():
-        pass
+    def stop_testing(self, BacktestBrokerAPI):
+        self.stop_running(BacktestBrokerAPI)

@@ -84,15 +84,19 @@ def test(num):
 
 
 trading_agent_mode = "STOP"
+broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
+broker_platform = None
 
 def stop_agent():
     global trading_agent_mode
+    # print(trading_agent_mode)
+
     if trading_agent_mode == "RUN":
-        trading_agent.stop_running()
+        trading_agent.stop_running(broker_platform)
     elif trading_agent_mode == "TRAIN":
-        trading_agent.stop_training()
+        trading_agent.stop_training(broker_platform)
     elif trading_agent_mode == "TEST":
-        trading_agent.stop_testing()
+        trading_agent.stop_testing(broker_platform)
     trading_agent_mode = "STOP"
 
 def create_agent(trading_agent_name):
@@ -102,16 +106,13 @@ def create_agent(trading_agent_name):
         os.makedirs(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
     return trading_agent_module.TradingAgent(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
 
+trading_agent = create_agent(settings['trading_agent'])
 # def create_broker_platform(broker_platform_name):
 #     broker_platform_module = __import__(broker_platform_name)
 #     print('Selected trading agent:', trading_agent_module)
 #     # if not os.path.exists(os.path.join(cwd, 'broker_platforms_files', broker_platform_name)):
 #     #     os.makedirs(os.path.join(cwd, 'broker_platforms_files', broker_platform_name))
 #     return broker_platform_module.TradingAgent()
-
-trading_agent = create_agent(settings['trading_agent'])
-broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
-broker_platform = None
 
 def signal_handler(signal, frame):
     print('You pressed Ctrl+C!')
@@ -128,6 +129,7 @@ def after_broker_platform_loop():
     pass
 
 def start():
+    global trading_agent_mode
     global trading_agent
     global broker_platform_module
     global broker_platform
