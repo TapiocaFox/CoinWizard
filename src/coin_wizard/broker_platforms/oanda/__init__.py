@@ -271,10 +271,10 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         for trade in self.account.trades:
                             if trade.trade_id == trade_id:
                                 realized_pl = float(trade_closed['realizedPL'])
-                                closeout_price = float(trade_closed['price'])
+                                close_price = float(trade_closed['price'])
                                 spread = float(trade_closed['halfSpreadCost'])
                                 trade.closed = True
-                                trade.closed_listener(trade, realized_pl, closeout_price, spread, timestamp)
+                                trade.closed_listener(trade, realized_pl, close_price, spread, timestamp)
                                 self.account.trades.remove(trade)
 
                     # print(json.dumps(transaction['tradesClosed'], indent=2))

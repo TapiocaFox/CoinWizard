@@ -20,9 +20,9 @@ class TradingAgent(object):
         print(trade.getOpenPrice())
         print('An order filled.')
 
-    def _trade_closed_listener(self, trade, realized_pl, closeout_price, spread, timestamp):
+    def _trade_closed_listener(self, trade, realized_pl, close_price, spread, timestamp):
         print(trade.getOpenPrice())
-        print(closeout_price)
+        print(close_price)
         # print(datetime.now().timestamp()-timestamp.timestamp())
 
     def _run_loop(self, BrokerAPI):
