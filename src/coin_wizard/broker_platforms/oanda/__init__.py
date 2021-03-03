@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json, dateutil
+import pandas as pd
 
 import coin_wizard.broker_platform_objects as BrokerPlatform
 from datetime import datetime
@@ -10,17 +11,18 @@ from oandapyV20 import API
 import oandapyV20.endpoints.accounts as accounts
 import oandapyV20.endpoints.orders as orders
 import oandapyV20.endpoints.trades as trades
+import oandapyV20.endpoints.instruments as instruments
 import oandapyV20.endpoints.pricing as pricing
 import oandapyV20.endpoints.transactions as transactions
 
 from oandapyV20.contrib.requests import MarketOrderRequest
 
-account_update_interval_threshold_ms = 10
+update_interval_threshold_ms = 10
 
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['access_token', 'account_id']
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 500):
+    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 1000):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
         self.oanda_api = API(access_token=broker_settings['access_token'])
         self.account_id = broker_settings['account_id']
@@ -98,7 +100,33 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         return self._import_order_detail(rv['orderCreateTransaction'])
 
     def getInstrument(self, instrument_name):
-        pass
+        if instrument_name in self.instruments_watchlist:
+            return self.instruments_watchlist[instrument_name]
+        params = {
+            "granularity": "M1",
+            # "count": 2000,
+            "count": 3,
+        }
+
+        instrument = BrokerPlatform.Instrument(instrument_name, self._update_instrument_handler)
+
+        r = instruments.InstrumentsCandles(instrument_name, params)
+        rv = self.oanda_api.request(r)
+        candles = rv['candles']
+
+        instrument.latest_candles_iso_time = candles[-1]['time']
+        candles_df = self._convert_mid_candles_to_dataframe(candles)
+        instrument.recent_1m_candles = candles_df.loc[candles_df['completed'] == True]
+        instrument.latest_update_datetime = datetime.now()
+        # instrument.pricing_stream = pricing.PricingStream(accountID=self.account_id, params={"instruments":instrument_name})
+        # print([R for R in self.oanda_api.request(instrument.pricing_stream)])
+        # raise
+        # instrument.current_price =
+        # print(instrument.recent_1m_candles)
+        # print(instrument.recent_1m_candles.tail(1))
+        self.instruments_watchlist[instrument_name] = instrument
+        # raise
+        return instrument
 
     def _import_order_detail(self, order_detail):
         if order_detail['type'] in ['MARKET', 'LIMIT', 'STOP']:
@@ -181,9 +209,26 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         trade.close_handler = self._trade_close_handler
         trade.modify_handler = None
         trade.open_price = float(trade_detail['price'])
+        trade.price = float(trade_detail['price'])
+        trade.unrealized_pl = float(trade_detail['unrealizedPL'])
 
         self.account.trades.append(trade)
         return trade
+
+    def _convert_mid_candles_to_dataframe(self, candles):
+        rows = []
+        for candle in candles:
+            row = {
+                "time": candle['time'],
+                "open": candle['mid']['o'],
+                "high": candle['mid']['h'],
+                "low": candle['mid']['l'],
+                "close": candle['mid']['c'],
+                "volume": candle['volume'],
+                "completed": candle['complete'],
+            }
+            rows.append(row)
+        return pd.DataFrame(data=rows)
 
     def _remove_order_detail(self, order_id, reason=None):
         for order in self.account.orders:
@@ -223,8 +268,28 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def _trade_modify_handler(self, trade_id, trade_settings):
         pass
 
+    def _update_instrument_handler(self, instrument):
+        if 1000*(datetime.now().timestamp() - instrument.latest_update_datetime.timestamp()) < update_interval_threshold_ms:
+            # print('skipped.', 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()))
+            return
+        params = {
+            "granularity": "M1",
+            "from": instrument.latest_candles_iso_time,
+        }
+
+        r = instruments.InstrumentsCandles(instrument.instrument_name, params)
+        rv = self.oanda_api.request(r)
+        candles = rv['candles']
+        candles_df = self._convert_mid_candles_to_dataframe(candles)
+
+        instrument.active_1m_candle = candles_df.loc[candles_df['completed'] == False]
+        new_candles_df = candles_df.loc[candles_df['completed'] == True]
+        instrument.recent_1m_candles = instrument.recent_1m_candles.append(new_candles_df)
+        instrument.latest_candles_iso_time = candles[-1]['time']
+        instrument.latest_update_datetime = datetime.now()
+
     def _update_account_handler(self):
-        if 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()) < account_update_interval_threshold_ms:
+        if 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()) < update_interval_threshold_ms:
             # print('skipped.', 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()))
             return
         r = accounts.AccountSummary(self.account_id)
@@ -238,18 +303,46 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         self.account.unrealized_pl = account['unrealizedPL']
         self.account.latest_update_datetime = datetime.now()
 
-    def _update_trade_handler(self):
-        r = accounts.AccountSummary(self.account_id)
+    def _update_trade_handler(self, trade):
+        r = trades.TradeDetails(self.account_id, trade.trade_id)
         rv = self.oanda_api.request(r)
-        account = rv['account']
-        # self.account.balance = account['balance']
-        # self.account.currency = account['currency']
-        # self.account.margin_rate = account['marginRate']
-        # self.account.margin_used = account['marginUsed']
-        # self.account.margin_available = account['marginAvailable']
-        # self.account.unrealized_pl = account['unrealizedPL']
+
+        trade_detail = rv['trade']
+        # print(json.dumps(trade_detail, indent=2))
+
+        trade_settings = {}
+        trade_settings['units'] = float(trade_detail['currentUnits'])
+
+        if "takeProfitOrder" in trade_detail:
+            trade_settings['take_profit'] = float(trade_detail['takeProfitOrder']['price'])
+
+        if "stopLossOrder" in trade_detail:
+            trade_settings['stop_loss'] = float(trade_detail['stopLossOrder']['price'])
+
+        if "trailingStopLossOrder" in trade_detail:
+            trade_settings['trailing_stop_distance'] = float(trade_detail['trailingStopLossOrder']['distance'])
+
+        trades.trade_settings = trade_settings
+        trade.unrealized_pl = float(trade_detail['unrealizedPL'])
 
     def _loop(self):
+        instruments_string = ','.join([i for i in self.instruments_watchlist])
+        r = pricing.PricingInfo(self.account_id, params={"instruments":instruments_string})
+        rv = self.oanda_api.request(r)
+        # print(json.dumps(rv, indent=2))
+        prices = rv['prices']
+        # Update instruments
+        for price in prices:
+            instrument = self.instruments_watchlist[price['instrument']]
+            instrument.current_closeout_bid = price['closeoutBid']
+            instrument.current_closeout_ask = price['closeoutAsk']
+            instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
+            instrument.tradable = price['status'] == 'tradeable'
+            # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
+            # print(instrument.recent_1m_candles)
+            # print(instrument.recent_1m_candles.tail(1))
+
+        # Update transactions
         r = transactions.TransactionsSinceID(self.account_id, {"id": self.latest_sync_transaction_id})
         rv = self.oanda_api.request(r)
         transaction_list = rv['transactions']

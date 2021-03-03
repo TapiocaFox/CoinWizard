@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import time
 import plotly.graph_objects as go
 import pytz
 eastern = pytz.timezone('US/Eastern')
@@ -8,16 +9,20 @@ utc = pytz.utc
 from datetime import datetime
 from coin_wizard.historical_pair_data import plot_historical_pair_data
 # import state manager
-
+t = None
+i = None
 class TradingAgent(object):
     def __init__(self, agent_directory):
-        print(agent_directory)
+        print('Started directory:', agent_directory)
 
     def _order_canceled_listener(self, order):
         print('An order canceled.')
 
     def _order_filled_listener(self, order, trade):
+        # global t
         print(trade.getOpenPrice())
+        print(trade.getUnrealizedPL())
+        # t = trade
         print('An order filled.')
 
     def _trade_closed_listener(self, trade, realized_pl, close_price, spread, timestamp):
@@ -26,12 +31,19 @@ class TradingAgent(object):
         # print(datetime.now().timestamp()-timestamp.timestamp())
 
     def _run_loop(self, BrokerAPI):
+        # global t
+        global i
+        print(i.getActive1MCandle())
+        print(i.getCurrentCloseoutBidAsk())
+        # print(t.getUnrealizedPL())
         pass
         # print(BrokerAPI.getAccount().getUnrealizedPL())
         # print(123)
 
 
     def run(self, BrokerAPI):
+        global i
+
         account = BrokerAPI.getAccount()
         orders = account.getOrders()
         trades = account.getTrades()
@@ -69,6 +81,8 @@ class TradingAgent(object):
         print(order.getOrderSettings())
         print(order.getTradeSettings())
 
+        instrument = BrokerAPI.getInstrument('EUR_USD')
+        i = instrument
         BrokerAPI.onLoop(self._run_loop)
 
     def stop_running(self, BrokerAPI):

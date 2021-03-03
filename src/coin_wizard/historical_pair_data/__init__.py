@@ -209,10 +209,11 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
     df =  pd.DataFrame(get_historical_pair_data(pair, from_datetime, to_datetime))
     df['utc_timestamp']= pd.DatetimeIndex(pd.to_datetime(df['utc_timestamp'], unit='s')).tz_localize('UTC').tz_convert(target_timezone)
     df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
-    # print(df_new)
+    # print(df_new['timestamp'])
     return df_new
 
 def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
+
     quotes = get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone)
     fig = go.Figure(data=[go.Candlestick(x=quotes['timestamp'],
             open=quotes['open'],

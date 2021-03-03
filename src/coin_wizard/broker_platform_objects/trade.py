@@ -33,9 +33,9 @@ class Trade(object):
     def getTradeSettings(self):
         return self.trade_settings
 
-    def getCurrentPriceAndUnrealizedPL(self):
-        self.update_trade()
-        return {"price": self.price, "unrealized_pl": self.unrealized_pl}
+    def getUnrealizedPL(self):
+        self.update_trade(self)
+        return self.unrealized_pl
 
     def onClosed(self, closed_listener):
         self.closed_listener = closed_listener

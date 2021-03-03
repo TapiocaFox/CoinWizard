@@ -2,14 +2,28 @@
 #
 
 class Instrument(object):
-    def __init__(self):
+    def __init__(self, instrument_name, update_instrument):
+        self.instrument_name = instrument_name
         self.changed_listener = None
+        self.recent_1m_candles = None
+        self.active_1m_candle = None
+        self.update_instrument = update_instrument
+        self.tradable = True
+        self.current_closeout_bid = 0.0
+        self.current_closeout_ask = 0.0
+        self.current_closeout_bid_ask_datetime = None
 
-    def getRecentCandles1M(self, counts=500):
-        pass
-        
+    def getActive1MCandle(self):
+        self.update_instrument(self)
+        return self.active_1m_candle
+
+    def getCurrentCloseoutBidAsk(self):
+        return self.current_closeout_bid, self.current_closeout_ask, self.current_closeout_bid_ask_datetime
+
+    def getRecent1MCandles(self, counts=500):
+        self.update_instrument(self)
+        return self.recent_1m_candles.tail(counts)
+
     def isTradable(self):
-        pass
-
-    def onPriceChanged(self, changed_listener):
-        self.changed_listener = changed_listener
+        self.update_instrument(self)
+        return self.tradable
