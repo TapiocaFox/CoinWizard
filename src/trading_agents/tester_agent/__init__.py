@@ -10,7 +10,6 @@ from datetime import datetime
 from coin_wizard.historical_pair_data import plot_historical_pair_data
 # import state manager
 t = None
-i = None
 class TradingAgent(object):
     def __init__(self, agent_directory):
         print('Started directory:', agent_directory)
@@ -32,17 +31,18 @@ class TradingAgent(object):
 
     def _run_loop(self, BrokerAPI):
         # global t
-        global i
-        print(i.getActive1MCandle())
-        print(i.getCurrentCloseoutBidAsk())
+        instrument = BrokerAPI.getInstrument('EUR_USD')
+        print(instrument.getActive1MCandle())
+        print(instrument.getCurrentCloseoutBidAsk())
         # print(t.getUnrealizedPL())
         pass
         # print(BrokerAPI.getAccount().getUnrealizedPL())
         # print(123)
 
+    def _every_15_second_loop(self, BrokerAPI):
+        print('15 second passed.', datetime.now())
 
     def run(self, BrokerAPI):
-        global i
 
         account = BrokerAPI.getAccount()
         orders = account.getOrders()
@@ -82,8 +82,8 @@ class TradingAgent(object):
         print(order.getTradeSettings())
 
         instrument = BrokerAPI.getInstrument('EUR_USD')
-        i = instrument
         BrokerAPI.onLoop(self._run_loop)
+        BrokerAPI.onEvery15Second(self._every_15_second_loop)
 
     def stop_running(self, BrokerAPI):
         print('Agent stopped.')
