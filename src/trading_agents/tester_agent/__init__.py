@@ -88,7 +88,6 @@ class TradingAgent(object):
     def stop_running(self, BrokerAPI):
         print('Agent stopped.')
 
-
     def train(self, BrokerAPI):
         plot_historical_pair_data('eurusd', eastern.localize(datetime(2021, 1, 8, 0, 0)), eastern.localize(datetime(2021, 1, 11, 23, 59)), 'US/Eastern')
 
