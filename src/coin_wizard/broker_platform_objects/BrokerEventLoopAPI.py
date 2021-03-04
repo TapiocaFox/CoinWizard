@@ -45,7 +45,7 @@ class BrokerEventLoopAPI(object):
         self.before_loop()
         self._loop()
         # Fire every_15_second_listener if needed.
-        if 1000*(datetime.now().timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) > 15000:
+        if 1000*(datetime.now().timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) >= 15000:
             self.every_15_second_listener(self)
             self.latest_every_15_second_loop_datetime = datetime.now()
 
@@ -56,7 +56,7 @@ class BrokerEventLoopAPI(object):
         time_passed_ms = (end_loop_timestamp - self.latest_loop_datetime.timestamp())*1000
         every_15_second_loop_remain_ms = 15000 - (end_loop_timestamp - self.latest_every_15_second_loop_datetime.timestamp())*1000
         # print('every_15_second_loop_remain_ms', every_15_second_loop_remain_ms)
-        if every_15_second_loop_remain_ms < (self.loop_interval_ms - time_passed_ms):
+        if every_15_second_loop_remain_ms <= (self.loop_interval_ms - time_passed_ms):
             if every_15_second_loop_remain_ms > 0:
                 time.sleep(0.001*(every_15_second_loop_remain_ms))
             self.every_15_second_listener(self)

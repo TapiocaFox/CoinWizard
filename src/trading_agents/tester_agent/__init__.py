@@ -31,17 +31,12 @@ class TradingAgent(object):
         # print(datetime.now().timestamp()-timestamp.timestamp())
 
     def _run_loop(self, BrokerAPI):
-        # global t
-
         instrument = BrokerAPI.getInstrument('EUR_USD')
         print(instrument.getRecent1MCandles(10))
         print(instrument.getActive1MCandle())
         print(instrument.getCurrentCloseoutBidAsk())
 
-        # print(t.getUnrealizedPL())
         pass
-        # print(BrokerAPI.getAccount().getUnrealizedPL())
-        # print(123)
 
     def _every_15_second_loop(self, BrokerAPI):
         print('15 second passed.', datetime.now())

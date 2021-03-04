@@ -284,7 +284,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         instrument.active_1m_candle = candles_df.loc[candles_df['completed'] == False]
         new_candles_df = candles_df.loc[candles_df['completed'] == True]
-        instrument.recent_1m_candles = instrument.recent_1m_candles.append(new_candles_df)
+        if not new_candles_df.empty:
+            instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = new_candles_df.iloc[0]
         instrument.latest_candles_iso_time = candles[-1]['time']
         instrument.latest_update_datetime = datetime.now()
 
