@@ -23,6 +23,10 @@ class Account(object):
     def getMarginRate(self):
         return self.margin_rate
 
+    def getMarginAvailable(self):
+        self.update_account()
+        return self.margin_available
+
     def getMarginUsed(self):
         self.update_account()
         return self.margin_used

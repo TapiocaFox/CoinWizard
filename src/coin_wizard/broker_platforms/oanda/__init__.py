@@ -219,7 +219,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         rows = []
         for candle in candles:
             row = {
-                "time": candle['time'],
+                "timestamp": candle['time'],
                 "open": candle['mid']['o'],
                 "high": candle['mid']['h'],
                 "low": candle['mid']['l'],

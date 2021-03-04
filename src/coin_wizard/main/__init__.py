@@ -249,7 +249,7 @@ def start():
         elif answer == 12:
             progress_dialog(
                 title="Updating historical data",
-                text= datetime.now().strftime("Today's date in your timezone: %Y %m %d."),
+                text= datetime.now().strftime("Today's date in your timezone: %Y,%m,%d."),
                 run_callback=update_historical_pair_data,
             ).run()
             states['latest_historical_pair_data_update'] = datetime.now().strftime("%Y,%m,%d, %H:%M:%S")

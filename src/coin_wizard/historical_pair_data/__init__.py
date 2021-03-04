@@ -1,8 +1,7 @@
 #!/usr/bin/python3
-import csv, os
+import csv, os, pytz
 import numpy as np
 import pandas as pd
-import pytz
 import plotly.graph_objects as go
 
 from datetime import datetime
@@ -139,6 +138,7 @@ def update_historical_pair_data(set_percentage=set_percentage_prevent, log_text=
                                                           output_directory=output_directory,
                                                           download_again=True)
                         except Exception as e:
+                            log_text('\n')
                             log_text(str(e))
                             log_text('\nSkiped.\n')
                             raise
