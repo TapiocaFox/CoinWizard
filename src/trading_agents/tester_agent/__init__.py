@@ -98,7 +98,6 @@ class TradingAgent(object):
     def stop_training(self, BrokerAPI):
         pass
 
-
     def test(self, BacktestBrokerAPI):
         self.run(BacktestBrokerAPI)
 
