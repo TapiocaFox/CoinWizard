@@ -35,6 +35,7 @@ class TradingAgent(object):
         print(instrument.getRecent1MCandles(10))
         print(instrument.getActive1MCandle())
         print(instrument.getCurrentCloseoutBidAsk())
+        # print(instrument.isTradable())
 
         pass
 

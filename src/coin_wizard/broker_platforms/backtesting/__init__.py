@@ -79,6 +79,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         instrument.current_closeout_bid = price-half_spread
         instrument.current_closeout_ask = price+half_spread
         instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
+        instrument.tradable = True
         # raise
         self.instruments_watchlist[instrument_name] = instrument
         return instrument

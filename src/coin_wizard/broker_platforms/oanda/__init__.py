@@ -338,7 +338,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             instrument.current_closeout_bid = price['closeoutBid']
             instrument.current_closeout_ask = price['closeoutAsk']
             instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
-            instrument.tradable = price['status'] == 'tradeable'
+            instrument.tradable = price['tradeable']
             # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
             # print(instrument.recent_1m_candles)
             # print(instrument.recent_1m_candles.tail(1))
