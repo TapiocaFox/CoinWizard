@@ -44,7 +44,6 @@ class BrokerEventLoopAPI(object):
         # start_loop_timeStamp = datetime.now().timestamp()
         self.before_loop()
         self._loop()
-
         # Fire every_15_second_listener if needed.
         if 1000*(datetime.now().timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) > 15000:
             self.every_15_second_listener(self)
@@ -76,8 +75,18 @@ class BrokerEventLoopAPI(object):
         self.stopped = False
         self.latest_loop_datetime = datetime.now()
         self.latest_every_15_second_loop_datetime = datetime.now()
+        loop_failed_count = 0
         while True:
             if self.stopped:
                 return
-            self._loop_wrapper()
+            try:
+                self._loop_wrapper()
+                loop_failed_count = 0
+            except Exception as e:
+                loop_failed_count += 1
+                print(e)
+                print('A loop skipped with a exception. This is a '+str(loop_failed_count)+' times failure.')
+                if loop_failed_count > 3:
+                    print('Too many failures, skipped next loop.')
+                    break
             self.latest_loop_datetime = datetime.now()

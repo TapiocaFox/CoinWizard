@@ -326,65 +326,69 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         trade.unrealized_pl = float(trade_detail['unrealizedPL'])
 
     def _loop(self):
-        instruments_string = ','.join([i for i in self.instruments_watchlist])
-        r = pricing.PricingInfo(self.account_id, params={"instruments":instruments_string})
-        rv = self.oanda_api.request(r)
-        # print(json.dumps(rv, indent=2))
-        prices = rv['prices']
-        # Update instruments
-        for price in prices:
-            instrument = self.instruments_watchlist[price['instrument']]
-            instrument.current_closeout_bid = price['closeoutBid']
-            instrument.current_closeout_ask = price['closeoutAsk']
-            instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
-            instrument.tradable = price['status'] == 'tradeable'
-            # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
-            # print(instrument.recent_1m_candles)
-            # print(instrument.recent_1m_candles.tail(1))
+        try:
+            instruments_string = ','.join([i for i in self.instruments_watchlist])
+            r = pricing.PricingInfo(self.account_id, params={"instruments":instruments_string})
+            rv = self.oanda_api.request(r)
+            # print(json.dumps(rv, indent=2))
+            prices = rv['prices']
+            # Update instruments
+            for price in prices:
+                instrument = self.instruments_watchlist[price['instrument']]
+                instrument.current_closeout_bid = price['closeoutBid']
+                instrument.current_closeout_ask = price['closeoutAsk']
+                instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
+                instrument.tradable = price['status'] == 'tradeable'
+                # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
+                # print(instrument.recent_1m_candles)
+                # print(instrument.recent_1m_candles.tail(1))
 
-        # Update transactions
-        r = transactions.TransactionsSinceID(self.account_id, {"id": self.latest_sync_transaction_id})
-        rv = self.oanda_api.request(r)
-        transaction_list = rv['transactions']
-        # print(json.dumps(transaction_list, indent=2))
-        for transaction in transaction_list:
-            if transaction['type'] == 'ORDER_CANCEL' and transaction['reason'] != 'LINKED_TRADE_CLOSED' :
-                # print(json.dumps(transaction, indent=2))
-                self._remove_order_detail(transaction['orderID'], transaction['reason'])
-            elif transaction['type'] == 'ORDER_FILL':
-                # print(json.dumps(transaction, indent=2))
-                full_price = transaction['fullPrice']
-                closeout_bid = full_price['closeoutBid']
-                closeout_ask = full_price['closeoutAsk']
-                timestamp = dateutil.parser.isoparse(full_price['timestamp'])
-                if 'tradesClosed' in transaction:
-                    trades_closed = transaction['tradesClosed']
-                    for trade_closed in trades_closed:
-                        trade_id = trade_closed['tradeID']
-                        for trade in self.account.trades:
-                            if trade.trade_id == trade_id:
-                                realized_pl = float(trade_closed['realizedPL'])
-                                close_price = float(trade_closed['price'])
-                                spread = float(trade_closed['halfSpreadCost'])
-                                trade.closed = True
-                                trade.closed_listener(trade, realized_pl, close_price, spread, timestamp)
-                                self.account.trades.remove(trade)
+            # Update transactions
+            r = transactions.TransactionsSinceID(self.account_id, {"id": self.latest_sync_transaction_id})
+            rv = self.oanda_api.request(r)
+            transaction_list = rv['transactions']
+            # print(json.dumps(transaction_list, indent=2))
+            for transaction in transaction_list:
+                if transaction['type'] == 'ORDER_CANCEL' and transaction['reason'] != 'LINKED_TRADE_CLOSED' :
+                    # print(json.dumps(transaction, indent=2))
+                    self._remove_order_detail(transaction['orderID'], transaction['reason'])
+                elif transaction['type'] == 'ORDER_FILL':
+                    # print(json.dumps(transaction, indent=2))
+                    full_price = transaction['fullPrice']
+                    closeout_bid = full_price['closeoutBid']
+                    closeout_ask = full_price['closeoutAsk']
+                    timestamp = dateutil.parser.isoparse(full_price['timestamp'])
+                    if 'tradesClosed' in transaction:
+                        trades_closed = transaction['tradesClosed']
+                        for trade_closed in trades_closed:
+                            trade_id = trade_closed['tradeID']
+                            for trade in self.account.trades:
+                                if trade.trade_id == trade_id:
+                                    realized_pl = float(trade_closed['realizedPL'])
+                                    close_price = float(trade_closed['price'])
+                                    spread = float(trade_closed['halfSpreadCost'])
+                                    trade.closed = True
+                                    trade.closed_listener(trade, realized_pl, close_price, spread, timestamp)
+                                    self.account.trades.remove(trade)
 
-                    # print(json.dumps(transaction['tradesClosed'], indent=2))
-                if 'tradeOpened' in transaction:
-                    trade_opened = transaction['tradeOpened']
-                    for order in self.account.orders:
-                        if order.order_id == transaction['orderID']:
-                            trade_id = trade_opened['tradeID']
-                            r = trades.TradeDetails(self.account_id, trade_id)
-                            rv = self.oanda_api.request(r)
-                            trade = self._import_trade_detail(rv['trade'])
+                        # print(json.dumps(transaction['tradesClosed'], indent=2))
+                    if 'tradeOpened' in transaction:
+                        trade_opened = transaction['tradeOpened']
+                        for order in self.account.orders:
+                            if order.order_id == transaction['orderID']:
+                                trade_id = trade_opened['tradeID']
+                                r = trades.TradeDetails(self.account_id, trade_id)
+                                rv = self.oanda_api.request(r)
+                                trade = self._import_trade_detail(rv['trade'])
 
-                            # print(json.dumps(rv, indent=2))
+                                # print(json.dumps(rv, indent=2))
 
-                            order.filled_listener(order, trade)
-                            self.account.orders.remove(order)
-                    # print(json.dumps(transaction['tradeOpened'], indent=2))
+                                order.filled_listener(order, trade)
+                                self.account.orders.remove(order)
+                        # print(json.dumps(transaction['tradeOpened'], indent=2))
 
 
-        self.latest_sync_transaction_id = int(rv['lastTransactionID'])
+            self.latest_sync_transaction_id = int(rv['lastTransactionID'])
+        except Exception as e:
+            print(e)
+            print('A loop skipped with exception.')
