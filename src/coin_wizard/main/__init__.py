@@ -85,6 +85,7 @@ def test(num):
 
 trading_agent_mode = "STOP"
 broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
+test_train_broker_platform_module = __import__(settings['test_train_broker_platform']).BrokerEventLoopAPI
 broker_platform = None
 
 def stop_agent():
@@ -132,25 +133,30 @@ def start():
     global trading_agent_mode
     global trading_agent
     global broker_platform_module
+    global test_train_broker_platform_module
     global broker_platform
 
     while True:
         selections = [
-            (0, 'Run    trading agent.'),
-            (1, '[x] Train  trading agent.'),
-            (2, '[x] Test   trading agent by backtesting with historical pair data.'),
-            (3, 'Change  trading agent.'),
-            (4, 'Change broker platform.'),
-            (5, 'Set    broker platform settings.'),
-            (6, '[x] Plot   broker platform realtime pair data.'),
+            (0, 'Run    trading agent. (Broker platform: '+settings['broker_platform']+')'),
+            (1, 'Train  trading agent. (Broker platform: '+settings['test_train_broker_platform']+')'),
+            (2, 'Test   trading agent. (Broker platform: '+settings['test_train_broker_platform']+')'),
+            (3, 'Change  trading agent. ('+settings['trading_agent']+')'),
+            (4, 'Change broker platform. ('+settings['broker_platform']+')'),
+            (5, 'Change test/train broker platform. ('+settings['test_train_broker_platform']+')'),
+            (6, 'Set    broker platform settings. ('+settings['broker_platform']+')'),
+            (7, 'Set    test/train broker platform settings. ('+settings['test_train_broker_platform']+')'),
+            # (8, '[x] Plot   broker platform realtime pair data.'),
             (10, 'Plot   historical pair data.'),
             (11, 'Plot   previous historical pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
-            (13, '[x] Select which historical pair data to be followed.'),
+            # (13, '[x] Select which historical pair data to be followed.'),
             (99, 'Leave'),
         ]
-        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent'] +'"). \nBroker platform(Current: "'+ settings['broker_platform'] +'")', values = selections).run()
-
+        # answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent']
+        # +'"). \nBroker platform(Current: "'+ settings['broker_platform'] +'"). \nTest train broker platform(Current: "'+ settings['test_train_broker_platform']+'").', values = selections).run()
+        answer = radiolist_dialog(title='CoinWizard by noowyee', text='What do you want to do? \nTrading agent(Current: "'+ settings['trading_agent']
+        +'").', values = selections).run()
         if answer == 99:
             print('Good bye!')
             break
@@ -158,7 +164,7 @@ def start():
         elif answer == 0:
             trading_agent_mode = "RUN"
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
-            print('Initializing broker platform...')
+            print('Initializing broker platform('+settings['broker_platform']+')...')
             broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
             print('Running trading agent...')
             trading_agent.run(broker_platform)
@@ -169,12 +175,26 @@ def start():
 
         elif answer == 1:
             trading_agent_mode = "TRAIN"
-            trading_agent.train()
+            broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
+            print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
+            broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            print('Testing trading agent...')
+            trading_agent.run(broker_platform)
+            print('Starting test/train broker platform event loop...')
+            print('Press Ctrl+C to end loop.')
+            broker_platform._run_loop()
             stop_agent()
 
         elif answer == 2:
             trading_agent_mode = "TEST"
-            trading_agent.test("Backtest Broker API")
+            broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
+            print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
+            broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            print('Testing trading agent...')
+            trading_agent.run(broker_platform)
+            print('Starting test/train broker platform event loop...')
+            print('Press Ctrl+C to end loop.')
+            broker_platform._run_loop()
             stop_agent()
 
         elif answer == 3:
@@ -189,7 +209,7 @@ def start():
 
         elif answer == 4:
             bp_selections = [(filename, filename) for filename in os.listdir('./coin_wizard/broker_platforms')]
-            bp_answer = radiolist_dialog(title='Broker platform', text='What do you want to do? \Broker platform(Current: "'+ settings['broker_platform'] +'"). \n', values = bp_selections).run()
+            bp_answer = radiolist_dialog(title='Broker platform', text='What do you want to do? \nBroker platform(Current: "'+ settings['broker_platform'] +'"). \n', values = bp_selections).run()
             if bp_answer == None:
                 continue
             settings['broker_platform'] = bp_answer
@@ -197,10 +217,28 @@ def start():
             save_settings()
 
         elif answer == 5:
+            bp_selections = [(filename, filename) for filename in os.listdir('./coin_wizard/broker_platforms')]
+            bp_answer = radiolist_dialog(title='Test/train broker platform', text='What do you want to do? \nTest/train broker platform(Current: "'+ settings['test_train_broker_platform'] +'"). \n', values = bp_selections).run()
+            if bp_answer == None:
+                continue
+            settings['test_train_broker_platform'] = bp_answer
+            test_train_broker_platform_module = __import__(bp_answer).BrokerEventLoopAPI
+            save_settings()
+
+        elif answer == 6:
             bp = settings['broker_platform']
             bp_settings = {}
             print('\n=== "Broker platforms(Current: "'+bp+'")" settings ===')
             for field in broker_platform_module.broker_settings_fields:
+                bp_settings[field] = session.prompt("    "+field + ": ")
+            states["broker_platform_settings_dict"][bp] = bp_settings
+            save_states()
+
+        elif answer == 7:
+            bp = settings['test_train_broker_platform']
+            bp_settings = {}
+            print('\n=== "Test/train broker platforms(Current: "'+bp+'")" settings ===')
+            for field in test_train_broker_platform_module.broker_settings_fields:
                 bp_settings[field] = session.prompt("    "+field + ": ")
             states["broker_platform_settings_dict"][bp] = bp_settings
             save_states()

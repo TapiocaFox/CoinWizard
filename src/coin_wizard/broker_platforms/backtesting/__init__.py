@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import json, dateutil, pytz
+import json, dateutil, pytz, random, time
 import pandas as pd
 
 from coin_wizard.historical_pair_data import get_historical_pair_data_pandas, plot_historical_pair_data
@@ -14,10 +14,13 @@ time_delta_15_seconds = timedelta(seconds=15)
 time_delta_7_days = timedelta(days=7)
 utc = pytz.utc
 
+half_spread_high_pip = 0.8
+half_spread_low_pip = 0.6
+
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['balance', 'currency', 'margin_rate', 'start_year_utc', 'start_month_utc', 'start_day_utc', 'start_hour_utc', 'start_minute_utc', 'end_year_utc', 'end_month_utc', 'end_day_utc', 'end_hour_utc', 'end_minute_utc']
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 0):
+    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 100):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
         self.instruments_watchlist = {}
         self.current_virtual_datetime = utc.localize(datetime(
@@ -59,8 +62,23 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def getInstrument(self, instrument_name):
         if instrument_name in self.instruments_watchlist:
             return self.instruments_watchlist[instrument_name]
+
         instrument = BrokerPlatform.Instrument(instrument_name, self._update_instrument_handler)
         instrument.recent_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_7_days, self.current_virtual_datetime)
+        latest_candle = instrument.recent_1m_candles.tail(1).iloc[0]
+
+        open = latest_candle['open']
+        high = latest_candle['high']
+        low = latest_candle['low']
+        close = latest_candle['close']
+
+        half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
+        price = 0.8*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))
+        # print(price, half_spread, price-half_spread, price+half_spread, open, high, low, close)
+        instrument.current_closeout_bid = price-half_spread
+        instrument.current_closeout_ask = price+half_spread
+        instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
+        # raise
         self.instruments_watchlist[instrument_name] = instrument
         return instrument
 
