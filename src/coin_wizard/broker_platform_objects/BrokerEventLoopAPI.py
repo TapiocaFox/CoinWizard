@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import time
+import time, traceback
 from datetime import datetime
 
 def dummp_func(BrokerAPI):
@@ -82,9 +82,10 @@ class BrokerEventLoopAPI(object):
             try:
                 self._loop_wrapper()
                 loop_failed_count = 0
-            except Exception as e:
+            except Exception as err:
                 loop_failed_count += 1
-                print(e)
+                traceback.print_tb(err.__traceback__)
+                print(err)
                 print('A loop skipped with a exception. This is a '+str(loop_failed_count)+' times failure.')
                 if loop_failed_count > 3:
                     print('Too many failures, skipped next loop.')

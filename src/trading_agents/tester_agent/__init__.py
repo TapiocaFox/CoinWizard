@@ -21,6 +21,7 @@ class TradingAgent(object):
         # global t
         print(trade.getOpenPrice())
         print(trade.getUnrealizedPL())
+        trade.onClosed(self._trade_closed_listener)
         # t = trade
         print('An order filled.')
 
@@ -31,10 +32,12 @@ class TradingAgent(object):
 
     def _run_loop(self, BrokerAPI):
         # global t
+
         instrument = BrokerAPI.getInstrument('EUR_USD')
         print(instrument.getRecent1MCandles(10))
         print(instrument.getActive1MCandle())
         print(instrument.getCurrentCloseoutBidAsk())
+
         # print(t.getUnrealizedPL())
         pass
         # print(BrokerAPI.getAccount().getUnrealizedPL())

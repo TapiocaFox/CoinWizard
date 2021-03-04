@@ -17,7 +17,7 @@ import oandapyV20.endpoints.transactions as transactions
 
 from oandapyV20.contrib.requests import MarketOrderRequest
 
-update_interval_threshold_ms = 10
+update_interval_threshold_ms = 50
 
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
@@ -270,7 +270,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
     def _update_instrument_handler(self, instrument):
         if 1000*(datetime.now().timestamp() - instrument.latest_update_datetime.timestamp()) < update_interval_threshold_ms:
-            # print('skipped.', 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()))
+            # print('skipped.', 1000*(datetime.now().timestamp() - instrument.latest_update_datetime.timestamp()))
             return
         params = {
             "granularity": "M1",
@@ -345,6 +345,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # Update transactions
         r = transactions.TransactionsSinceID(self.account_id, {"id": self.latest_sync_transaction_id})
         rv = self.oanda_api.request(r)
+        self.latest_sync_transaction_id = int(rv['lastTransactionID'])
         transaction_list = rv['transactions']
         # print(json.dumps(transaction_list, indent=2))
         for transaction in transaction_list:
@@ -362,6 +363,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     for trade_closed in trades_closed:
                         trade_id = trade_closed['tradeID']
                         for trade in self.account.trades:
+                            # print(trade.trade_id)
+                            # print(trade.trade_id == trade_id)
+                            # print(trade.closed_listener)
                             if trade.trade_id == trade_id:
                                 realized_pl = float(trade_closed['realizedPL'])
                                 close_price = float(trade_closed['price'])
@@ -385,6 +389,3 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             order.filled_listener(order, trade)
                             self.account.orders.remove(order)
                     # print(json.dumps(transaction['tradeOpened'], indent=2))
-
-
-        self.latest_sync_transaction_id = int(rv['lastTransactionID'])

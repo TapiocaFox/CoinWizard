@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 #
+# def dummp_func(a, b, c, d, e):
+#     print('A trade close has been skipped. Since event not registered.')
 
 class Trade(object):
     def __init__(self, trade_id, instrument_name, open_price, trade_settings, update_trade):
@@ -7,7 +9,6 @@ class Trade(object):
         self.instrument_name = instrument_name
         self.open_price = open_price
         self.trade_settings = trade_settings
-
         self.price = open_price
         self.unrealized_pl = 0
         self.closed_listener = None
