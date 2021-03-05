@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json, os, sys, pytz, signal
+import coin_wizard.plotter as plotter
 
 sys.path.append('./trading_agents')
 sys.path.append('./coin_wizard/broker_platforms')
@@ -9,6 +10,7 @@ from datetime import datetime
 
 from coin_wizard.historical_pair_data import update_historical_pair_data, plot_historical_pair_data, get_historical_pair_list
 from coin_wizard.main.event_manager import EventManager
+from coin_wizard.utils import translate_pair_to_splited, translate_pair_to_unsplited
 
 from prompt_toolkit.shortcuts import radiolist_dialog, progress_dialog, input_dialog
 from prompt_toolkit import PromptSession
@@ -52,6 +54,11 @@ states = {
         "to_month": "6",
         "to_day": "1"
     },
+    "latest_broker_plot_settings": {
+        "pair": "EUR_USD",
+        "timezone": "US/Eastern",
+        "counts": 1000
+    },
     "broker_platform_settings_dict": {
 
     }
@@ -77,11 +84,13 @@ if not os.path.exists('states.json'):
     save_states()
 else:
     with open('states.json') as states_file:
-        states = json.load(states_file)
+        loaded_states = json.load(states_file)
+        for key in loaded_states:
+            states[key] = loaded_states[key]
+        save_states()
 
 def test(num):
     pass
-
 
 trading_agent_mode = "STOP"
 broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
@@ -146,8 +155,9 @@ def start():
             (5, 'Change test/train broker platform. ('+settings['test_train_broker_platform']+')'),
             (6, 'Set    broker platform settings. ('+settings['broker_platform']+')'),
             (7, 'Set    test/train broker platform settings. ('+settings['test_train_broker_platform']+')'),
-            # (8, '[x] Plot   broker platform realtime pair data.'),
-            (10, 'Plot   historical pair data.'),
+            (8, 'Plot   broker platform recent 1M pair data.'),
+            (9, 'Plot   broker platform recent 1M pair data with previous settings.'),
+            (10, 'Plot   historical 1M pair data.'),
             (11, 'Plot   previous historical pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             # (13, '[x] Select which historical pair data to be followed.'),
@@ -242,6 +252,39 @@ def start():
                 bp_settings[field] = session.prompt("    "+field + ": ")
             states["broker_platform_settings_dict"][bp] = bp_settings
             save_states()
+
+        elif answer == 8:
+            broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
+            print('Initializing broker platform('+settings['broker_platform']+')...')
+            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            print('\n=== "Plot broker platform recent pair data" settings ===')
+            states["latest_broker_plot_settings"]["pair"] = pair = session.prompt("  Pair: ", default=str(states["latest_broker_plot_settings"]["pair"]))
+            states["latest_broker_plot_settings"]["timezone"] = timezone = session.prompt("  Output Timezone: ", default=str(states["latest_broker_plot_settings"]["timezone"]))
+            states["latest_broker_plot_settings"]["counts"] = counts = int(session.prompt("  Counts: ", default=str(states["latest_broker_plot_settings"]["counts"])))
+            if pair.islower():
+                pair = translate_pair_to_splited(pair)
+            instrument = broker_platform.getInstrument(pair)
+            save_states()
+            print('')
+            print('Ploting...')
+            plotter.plot_candles(pair, instrument.getRecent1MCandles(counts), timezone)
+            print('Ploted.')
+
+        elif answer == 9:
+            broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
+            print('Initializing broker platform('+settings['broker_platform']+')...')
+            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            print('\n=== "Plot broker platform recent pair data" settings ===')
+            pair = states["latest_broker_plot_settings"]["pair"]
+            timezone = states["latest_broker_plot_settings"]["timezone"]
+            counts = states["latest_broker_plot_settings"]["counts"]
+            if pair.islower():
+                pair = translate_pair_to_splited(pair)
+            instrument = broker_platform.getInstrument(pair)
+            print('')
+            print('Ploting...')
+            plotter.plot_candles(pair, instrument.getRecent1MCandles(counts), timezone)
+            print('Ploted.')
 
         elif answer == 10:
             print('\n=== "Plot historical pair data" settings ===')

@@ -4,10 +4,12 @@ import json, dateutil, pytz, random, time, traceback
 import pandas as pd
 
 from coin_wizard.historical_pair_data import get_historical_pair_data_pandas, plot_historical_pair_data
-from coin_wizard.broker_platforms.backtesting.utils import translate_pair_to_splited, translate_pair_to_unsplited
+from coin_wizard.utils import translate_pair_to_splited, translate_pair_to_unsplited
 import coin_wizard.broker_platform_objects as BrokerPlatform
 from datetime import datetime, timedelta
 from time import sleep
+
+price_list = []
 #
 # update_interval_threshold_ms = 50
 time_delta_15_seconds = timedelta(seconds=15)
@@ -110,6 +112,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         pass
 
     def _loop(self):
+        # Update instruments
         for instrument_name in self.instruments_watchlist:
             instrument = self.instruments_watchlist[instrument_name]
             latest_candle_df = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_60_seconds, self.current_virtual_datetime).tail(1)
@@ -118,6 +121,15 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             # print(self.current_virtual_datetime)
             # print(instrument.recent_1m_candles)
             latest_candle = latest_candle_df.iloc[0]
+            open = latest_candle['open']
+            high = latest_candle['high']
+            low = latest_candle['low']
+            close = latest_candle['close']
+            half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
+            price = 0.7*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))+0.1*close
+            instrument.current_closeout_bid = price-half_spread
+            instrument.current_closeout_ask = price+half_spread
+            instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
             # print(latest_candle)
             # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
             if latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp']:
@@ -127,7 +139,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def _loop_wrapper(self):
         self.before_loop()
         self._loop()
-        print(1000*(self.current_virtual_datetime.timestamp() - self.latest_every_15_second_loop_datetime.timestamp()))
+        # print(1000*(self.current_virtual_datetime.timestamp() - self.latest_every_15_second_loop_datetime.timestamp()))
         # Fire every_15_second_listener if needed.
         if 1000*(self.current_virtual_datetime.timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) >= 14999:
             self.every_15_second_listener(self)

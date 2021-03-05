@@ -22,7 +22,7 @@ class Instrument(object):
 
     def getRecent1MCandles(self, counts=500):
         self.update_instrument(self)
-        return self.recent_1m_candles.tail(counts)
+        return self.recent_1m_candles.tail(counts).reset_index(drop=True).copy()
 
     def isTradable(self):
         self.update_instrument(self)

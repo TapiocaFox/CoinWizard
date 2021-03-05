@@ -2,13 +2,17 @@
 import csv, os, pytz
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
+
 
 from datetime import datetime
 from coin_wizard.historical_pair_data_fetcher import download_hist_data
 from coin_wizard.historical_pair_data_fetcher.api import Platform, TimeFrame
+from coin_wizard.utils import translate_pair_to_splited, translate_pair_to_unsplited
+import coin_wizard.plotter as plotter
 from zipfile import ZipFile
 from numpy import genfromtxt
+
+# import plotly.graph_objects as go
 
 temp_directory = './temp'
 platform = Platform.GENERIC_ASCII
@@ -160,7 +164,7 @@ def update_historical_pair_data(set_percentage=set_percentage_prevent, log_text=
 def get_historical_pair_data(pair, from_datetime, to_datetime):
     if from_datetime > to_datetime:
         return None
-
+    pair = translate_pair_to_unsplited(pair)
     timestamp_lower = datetime.timestamp(from_datetime)
     timestamp_higher = datetime.timestamp(to_datetime)
     # print(timestamp_higher)
@@ -212,17 +216,20 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
     # print(df_new['timestamp'])
     return df_new
 
-def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
+# def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
+#
+#     quotes = get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone)
+#     fig = go.Figure(data=[go.Candlestick(x=quotes['timestamp'],
+#             open=quotes['open'],
+#             high=quotes['high'],
+#             low=quotes['low'],
+#             close=quotes['close'])])
+#     fig.update_layout(
+#         title='Historical chart of "'+pair+'". In "'+target_timezone+'" timezone.',
+#         yaxis_title=pair
+#     )
+#     # fig.update_yaxes(autorange=True)
+#     fig.show()
 
-    quotes = get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone)
-    fig = go.Figure(data=[go.Candlestick(x=quotes['timestamp'],
-            open=quotes['open'],
-            high=quotes['high'],
-            low=quotes['low'],
-            close=quotes['close'])])
-    fig.update_layout(
-        title='Historical chart of "'+pair+'". In "'+target_timezone+'" timezone.',
-        yaxis_title=pair
-    )
-    # fig.update_yaxes(autorange=True)
-    fig.show()
+def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
+    plotter.plot_candles('Historical chart of "'+pair+'". In "'+target_timezone+'" timezone.', get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone), target_timezone)

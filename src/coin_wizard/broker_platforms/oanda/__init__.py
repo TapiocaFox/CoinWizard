@@ -220,15 +220,18 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         for candle in candles:
             row = {
                 "timestamp": candle['time'],
-                "open": candle['mid']['o'],
-                "high": candle['mid']['h'],
-                "low": candle['mid']['l'],
-                "close": candle['mid']['c'],
-                "volume": candle['volume'],
+                "open": float(candle['mid']['o']),
+                "high": float(candle['mid']['h']),
+                "low": float(candle['mid']['l']),
+                "close": float(candle['mid']['c']),
+                "volume": float(candle['volume']),
                 "completed": candle['complete'],
             }
             rows.append(row)
-        return pd.DataFrame(data=rows)
+        df = pd.DataFrame(data=rows)
+        df['timestamp'] = pd.DatetimeIndex(pd.to_datetime(df['timestamp']))
+        df.sort_values(by='timestamp')
+        return df
 
     def _remove_order_detail(self, order_id, reason=None):
         for order in self.account.orders:
