@@ -186,7 +186,7 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
             with open(os.path.join(pair_data_path, filename), 'rb') as f:
                 year_array = np.load(f)
                 filtered_array = year_array[year_array['utc_timestamp']>=timestamp_lower]
-                filtered_array = filtered_array[filtered_array['utc_timestamp']<=timestamp_higher]
+                filtered_array = filtered_array[filtered_array['utc_timestamp']<timestamp_higher]
                 # print(filtered_array)
                 filtered_array_list.append(filtered_array)
         # Month
@@ -200,7 +200,7 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
                     with open(os.path.join(pair_data_path, filename), 'rb') as f:
                         month_array = np.load(f)
                         filtered_array = month_array[month_array['utc_timestamp']>=timestamp_lower]
-                        filtered_array = filtered_array[filtered_array['utc_timestamp']<=timestamp_higher]
+                        filtered_array = filtered_array[filtered_array['utc_timestamp']<timestamp_higher]
                         # print(filtered_array)
                         filtered_array_list.append(filtered_array)
                     month += 1

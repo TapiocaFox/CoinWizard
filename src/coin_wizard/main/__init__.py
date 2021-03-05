@@ -6,7 +6,7 @@ import coin_wizard.plotter as plotter
 sys.path.append('./trading_agents')
 sys.path.append('./coin_wizard/broker_platforms')
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from coin_wizard.historical_pair_data import update_historical_pair_data, plot_historical_pair_data, get_historical_pair_list
 from coin_wizard.main.event_manager import EventManager
@@ -16,6 +16,8 @@ from prompt_toolkit.shortcuts import radiolist_dialog, progress_dialog, input_di
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory
+
+time_delta_1_days = timedelta(days=1)
 
 prompt_history = InMemoryHistory()
 
@@ -158,7 +160,7 @@ def start():
             (8, 'Plot   broker platform recent 1M pair data.'),
             (9, 'Plot   broker platform recent 1M pair data with previous settings.'),
             (10, 'Plot   historical 1M pair data.'),
-            (11, 'Plot   previous historical pair data.'),
+            (11, 'Plot   previous historical 1M pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             # (13, '[x] Select which historical pair data to be followed.'),
             (99, 'Leave'),
@@ -267,14 +269,13 @@ def start():
             save_states()
             print('')
             print('Ploting...')
-            plotter.plot_candles(pair, instrument.getRecent1MCandles(counts), timezone)
+            plotter.plot_candles(pair+' in '+timezone, instrument.getRecent1MCandles(counts), timezone)
             print('Ploted.')
 
         elif answer == 9:
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
             print('Initializing broker platform('+settings['broker_platform']+')...')
             broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
-            print('\n=== "Plot broker platform recent pair data" settings ===')
             pair = states["latest_broker_plot_settings"]["pair"]
             timezone = states["latest_broker_plot_settings"]["timezone"]
             counts = states["latest_broker_plot_settings"]["counts"]
@@ -283,7 +284,7 @@ def start():
             instrument = broker_platform.getInstrument(pair)
             print('')
             print('Ploting...')
-            plotter.plot_candles(pair, instrument.getRecent1MCandles(counts), timezone)
+            plotter.plot_candles(pair+' in '+timezone, instrument.getRecent1MCandles(counts), timezone)
             print('Ploted.')
 
         elif answer == 10:
@@ -305,7 +306,7 @@ def start():
             save_states()
             print('')
             print('Ploting...')
-            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 23, 59)), timezone)
+            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 0, 0)+time_delta_1_days), timezone)
             print('Ploted.')
 
         elif answer == 11:
@@ -324,7 +325,7 @@ def start():
 
             print('')
             print('Ploting...')
-            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 23, 59)), timezone)
+            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 0, 0)+time_delta_1_days), timezone)
             print('Ploted.')
 
         elif answer == 12:

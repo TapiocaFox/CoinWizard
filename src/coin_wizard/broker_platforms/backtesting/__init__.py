@@ -68,6 +68,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         instrument = BrokerPlatform.Instrument(instrument_name, self._update_instrument_handler)
         instrument.recent_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_7_days, self.current_virtual_datetime)
+        instrument.future_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime , self.end_datetime - time_delta_7_days)
         latest_candle = instrument.recent_1m_candles.tail(1).iloc[0]
 
         open = latest_candle['open']
@@ -115,12 +116,16 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # Update instruments
         for instrument_name in self.instruments_watchlist:
             instrument = self.instruments_watchlist[instrument_name]
-            latest_candle_df = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_60_seconds, self.current_virtual_datetime).tail(1)
+            latest_candle_df = instrument.future_1m_candles
+            # latest_candle_df = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_60_seconds, self.current_virtual_datetime).tail(1)
+            latest_candle_df = latest_candle_df[latest_candle_df['timestamp'] <= self.current_virtual_datetime]
+            latest_candle_df = latest_candle_df[latest_candle_df['timestamp'] >= self.current_virtual_datetime - time_delta_60_seconds]
             # print(latest_candle_df)
             # print(self.current_virtual_datetime - time_delta_60_seconds)
             # print(self.current_virtual_datetime)
             # print(instrument.recent_1m_candles)
-            latest_candle = latest_candle_df.iloc[0]
+            instrument.active_1m_candle = latest_candle_df.tail(1)
+            latest_candle = latest_candle_df.tail(1).iloc[0]
             open = latest_candle['open']
             high = latest_candle['high']
             low = latest_candle['low']
@@ -132,8 +137,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
             # print(latest_candle)
             # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
-            if latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp']:
-                instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle
+            if len(latest_candle_df) >= 2:
+                instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
         self.current_virtual_datetime += time_delta_15_seconds
 
     def _loop_wrapper(self):
