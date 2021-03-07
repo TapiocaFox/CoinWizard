@@ -11,6 +11,7 @@ class Order(object):
         self.canceled_listener = None
         self.cancel_handler = None
         self.canceled = False
+        self.filled = False
 
     def getInstrumentName(self):
         return self.instrument_name
@@ -22,7 +23,7 @@ class Order(object):
         return self.trade_settings
 
     def cancel(self):
-        if self.canceled:
+        if self.canceled or self.filled:
             raise Exception('Order already closed.')
         return self.cancel_handler(self.order_id)
 

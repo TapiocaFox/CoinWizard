@@ -66,16 +66,18 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         order_settings_r = {
             "instrument": instrument_name,
-            "type": order_settings['type'].upper(),
-            "price": "2",
+            "type": order_settings['type'].upper()
         }
 
         if "bound" in order_settings:
             order_settings_r['priceBound'] = order_settings['bound']
 
+        if "price" in order_settings:
+            order_settings_r['price'] = order_settings['price']
+
         # trade_settings
-        if "units" in trade_settings:
-            order_settings_r['units'] = trade_settings['units']
+        # if "units" in trade_settings:
+        order_settings_r['units'] = trade_settings['units']
 
         if "take_profit" in trade_settings:
             order_settings_r['takeProfitOnFill'] = {
@@ -389,7 +391,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             trade = self._import_trade_detail(rv['trade'])
 
                             # print(json.dumps(rv, indent=2))
-
+                            order.filled = True
                             order.filled_listener(order, trade)
                             self.account.orders.remove(order)
                     # print(json.dumps(transaction['tradeOpened'], indent=2))

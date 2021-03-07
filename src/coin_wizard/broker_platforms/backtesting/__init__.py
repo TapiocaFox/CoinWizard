@@ -51,12 +51,69 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         self.ended_listener = None
 
     def order(self, instrument_name, order_settings, trade_settings):
+        instrument = self.getInstrument(instrument_name)
+        bid, ask, d = instrument.getCurrentCloseoutBidAsk()
 
-        # price_bound = order_settings['bound']
-        # units = trade_settings['units']
-        # take_profit = trade_settings['take_profit']
-        # stop_loss = trade_settings['stop_lost']
-        # trailing_stop_distance = trade_settings['trailing_stop_distance']
+        # Start validations
+        units = trade_settings['units']
+
+        if "take_profit" in trade_settings:
+            take_profit = trade_settings['take_profit']
+        else:
+            take_profit = None
+
+        if "stop_lost" in trade_settings:
+            stop_loss = trade_settings['stop_lost']
+        else:
+            stop_loss = None
+
+        if "trailing_stop_distance" in trade_settings:
+            trailing_stop_distance = trade_settings['trailing_stop_distance']
+        else:
+            trailing_stop_distance = None
+
+        if order_settings['type'] == 'market':
+            pass
+
+        elif order_settings['type'] == 'stop':
+            price = order_settings['price']
+            if 'bound' in order_settings:
+                price_bound = order_settings['bound']
+            else:
+                price_bound = None
+            if units > 0:
+                if price < ask:
+                    raise Exception('Price('+str(price)+') cannot smaller then ask price('+str(ask)+').')
+                if price_bound!=None and price_bound < price:
+                    raise Exception('Price bound('+str(price_bound)+') cannot smaller then price('+str(price)+').')
+            elif units < 0:
+                if price > bid:
+                    raise Exception('Price('+str(price)+') cannot greater then bid price('+str(bid)+').')
+                if price_bound!=None and price_bound > price:
+                    raise Exception('Price bound('+str(price_bound)+') cannot greater then price('+str(price)+').')
+        else:
+            raise Exception('Does not supoort type "'+ order_settings['type']+'".')
+
+        # Validating trade setting
+        if int(units) - units != 0:
+            raise Exception('Order units must be integer.')
+        elif units == 0:
+            raise Exception('Order units cannot be zero.')
+
+        elif units > 0:
+            if take_profit!=None and take_profit <= ask:
+                raise Exception('Take profit('+str(take_profit)+') cannot smaller then ask price('+str(ask)+').')
+            if stop_loss!=None and stop_loss >= ask:
+                raise Exception('Stop loss('+str(stop_loss)+') cannot greater then ask price('+str(ask)+').')
+
+        elif units < 0:
+            if take_profit!=None and take_profit >= bid:
+                raise Exception('Take profit('+str(take_profit)+') cannot greater then bid price('+str(bid)+').')
+            if stop_loss!=None and stop_loss <= bid:
+                raise Exception('Stop loss('+str(stop_loss)+') cannot smaller then bid price('+str(bid)+').')
+
+        if trailing_stop_distance != None and trailing_stop_distance <= 0:
+            raise Exception('Trailing stop distance('+str(trailing_stop_distance)+') should greater then zero.')
 
         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
         self.account.orders.append(order)
@@ -124,22 +181,84 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             # print(self.current_virtual_datetime - time_delta_60_seconds)
             # print(self.current_virtual_datetime)
             # print(instrument.recent_1m_candles)
-            instrument.active_1m_candle = latest_candle_df.tail(1)
-            latest_candle = latest_candle_df.tail(1).iloc[0]
-            open = latest_candle['open']
-            high = latest_candle['high']
-            low = latest_candle['low']
-            close = latest_candle['close']
-            half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
-            price = 0.7*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))+0.1*close
-            instrument.current_closeout_bid = price-half_spread
-            instrument.current_closeout_ask = price+half_spread
-            instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
-            # print(latest_candle)
-            # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
-            if len(latest_candle_df) >= 2:
-                instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
+            instrument.active_1m_candle = latest_candle_df.tail(1).reset_index(drop=True)
+            latest_candle = latest_candle_df.tail(1)
+            # print(self.current_virtual_datetime)
+            if latest_candle.empty:
+                continue
+
+            latest_candle = latest_candle.iloc[0]
+            # print(self.current_virtual_datetime.timestamp() - latest_candle['timestamp'].to_pydatetime().timestamp())
+
+            if self.current_virtual_datetime.timestamp() - latest_candle['timestamp'].to_pydatetime().timestamp() >= 60:
+                if instrument.tradable:
+                    instrument.tradable = False
+                    instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
+            else:
+                instrument.tradable = True
+                open = latest_candle['open']
+                high = latest_candle['high']
+                low = latest_candle['low']
+                close = latest_candle['close']
+                half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
+                price = 0.7*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))+0.1*close
+                instrument.current_closeout_bid = price-half_spread
+                instrument.current_closeout_ask = price+half_spread
+                instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
+                # print(latest_candle)
+                # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
+                if len(latest_candle_df) >= 2:
+                    instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
         self.current_virtual_datetime += time_delta_15_seconds
+
+        # Update orders.
+        orders_to_be_canceled = []
+        orders_to_be_filled = []
+        for order in self.account.orders:
+            print(order)
+            instrument_name = order.instrument_name
+            instrument = self.instruments_watchlist[instrument_name]
+
+            order_settings = order.order_settings
+            trade_settings = order.trade_settings
+
+            order_type = order_settings['type']
+            units = order.trade_settings['units']
+            ask_price = instrument.current_closeout_ask
+            bid_price = instrument.current_closeout_bid
+            unrealized_pl = ask_price - bid_price
+
+            if order_type == 'market':
+                if units > 0:
+                    trade = BrokerPlatform.Trade('virtual_trade_id', instrument_name, ask_price, trade_settings, self._update_trade_handler)
+                    trade.unrealized_pl = unrealized_pl
+                    self.account.trades.append(trade)
+                    orders_to_be_filled.append([order, trade])
+                else:
+
+                    trade = BrokerPlatform.Trade('virtual_trade_id', instrument_name, bid_price, trade_settings, self._update_trade_handler)
+                    trade.unrealized_pl = unrealized_pl
+                    self.account.trades.append(trade)
+                    orders_to_be_filled.append([order, trade])
+
+            elif order_type == 'stop':
+                price = order_settings['price']
+                if 'bound' in order_settings:
+                    price_bound = order_settings['bound']
+                else:
+                    pass
+
+        for order_to_be_filled in orders_to_be_filled:
+            order = order_to_be_filled[0]
+            trade = order_to_be_filled[1]
+            self.account.trades.append(trade)
+            self.account.orders.remove(order)
+            order.filled = True
+            order.filled_listener(order, trade)
+
+        # Update trades.
+        for trades in self.account.trades:
+            pass
 
     def _loop_wrapper(self):
         self.before_loop()
