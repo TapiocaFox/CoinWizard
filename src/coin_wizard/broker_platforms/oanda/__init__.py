@@ -239,7 +239,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         for order in self.account.orders:
             if order.order_id == order_id:
                 order.canceled = True
-                order.canceled_listener(order)
+                order.canceled_listener(order, 'Canceled by oanda.')
                 self.account.orders.remove(order)
                 break
 
@@ -289,8 +289,10 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         instrument.active_1m_candle = candles_df.loc[candles_df['completed'] == False]
         new_candles_df = candles_df.loc[candles_df['completed'] == True]
+        new_candles_df = candles_df.loc[candles_df['timestamp'] > instrument.recent_1m_candles.tail(1).iloc[0]['timestamp']]
+        # print(123, instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
         if not new_candles_df.empty:
-            instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = new_candles_df.iloc[0]
+            instrument.recent_1m_candles = instrument.recent_1m_candles.append(new_candles_df).reset_index(drop=True)
         instrument.latest_candles_iso_time = candles[-1]['time']
         instrument.latest_update_datetime = datetime.now()
 

@@ -211,6 +211,20 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
         self.current_virtual_datetime += time_delta_15_seconds
 
+        # Update trades, caluculate PL.
+        unrealized_pl = 0.0
+        margin_used = 0.0
+
+        for trades in self.account.trades:
+            pass
+
+        self.account.unrealized_pl = unrealized_pl
+        self.account.margin_used = margin_used
+
+        # Check account states. Margin Closeout etc.
+        equity = self.account.balance+unrealized_pl
+        if margin_used* 0.5 > equity:
+            pass
         # Update orders.
         orders_to_be_canceled = []
         orders_to_be_filled = []
@@ -248,17 +262,24 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 else:
                     pass
 
+        # Fill orders cancel orders.
         for order_to_be_filled in orders_to_be_filled:
             order = order_to_be_filled[0]
             trade = order_to_be_filled[1]
-            self.account.trades.append(trade)
-            self.account.orders.remove(order)
-            order.filled = True
-            order.filled_listener(order, trade)
+            units = trade.trade_settings['units']
+            open_price = trade.open_price
 
-        # Update trades.
-        for trades in self.account.trades:
-            pass
+            if units*open_price > self.account.margin_available:
+                order.canceled = True
+
+            else:
+                self.account.unrealized_pl += trade.unrealized_pl
+                self.account.trades.append(trade)
+                self.account.orders.remove(order)
+                order.filled = True
+                order.filled_listener(order, trade)
+
+
 
     def _loop_wrapper(self):
         self.before_loop()

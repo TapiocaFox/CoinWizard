@@ -14,7 +14,7 @@ class TradingAgent(object):
     def __init__(self, agent_directory):
         print('Started directory:', agent_directory)
 
-    def _order_canceled_listener(self, order):
+    def _order_canceled_listener(self, order, reason):
         print('An order canceled.')
 
     def _order_filled_listener(self, order, trade):

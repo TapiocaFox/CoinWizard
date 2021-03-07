@@ -87,6 +87,8 @@ class BrokerEventLoopAPI(object):
                 traceback.print_tb(err.__traceback__)
                 print(err)
                 print('A loop skipped with a exception. This is a '+str(loop_failed_count)+' times failure.')
+                print('Sleep 5 seconds.')
+                time.sleep(5)
                 if loop_failed_count > 3:
                     print('Too many failures, skipped next loop.')
                     break
