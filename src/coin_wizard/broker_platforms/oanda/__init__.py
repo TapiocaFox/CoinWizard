@@ -421,7 +421,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     # print(json.dumps(transaction['tradeOpened'], indent=2))
                 if 'tradesClosed' in transaction:
                     # print('testestestestes')
-
+                    # print(transaction['reason'])
                     trades_closed = transaction['tradesClosed']
                     for trade_closed in trades_closed:
                         trade_id = trade_closed['tradeID']

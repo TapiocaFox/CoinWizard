@@ -28,14 +28,14 @@ class TradingAgent(object):
         if trade != None:
             print(' Instrument:', trade.instrument_name)
             print(' Open price:', trade.getOpenPrice())
-            print(' PL:', trade.getUnrealizedPL())
+            print(' Unrealized PL:', trade.getUnrealizedPL())
             print(' Trade settings:', trade.getTradeSettings())
             trade.onReduced(self._trade_reduced_listener)
             trade.onClosed(self._trade_closed_listener)
 
             # print(trade.trade_settings['take_profit'])
-            if trade.trade_settings['take_profit'] == 0.543:
-                trade.close()
+            # if trade.trade_settings['take_profit'] == 0.543:
+            #     trade.close()
         # t = trade
 
     def _trade_reduced_listener(self, trade, units, realized_pl, close_price, spread, timestamp):
@@ -77,6 +77,19 @@ class TradingAgent(object):
 
     def _every_15_second_loop(self, BrokerAPI):
         print('15 second passed.', datetime.now())
+        orders = self.account.getOrders()
+        trades = self.account.getTrades()
+        for order in orders:
+            print(order.getInstrumentName(), order.getOrderSettings(), order.getTradeSettings())
+            order.onCanceled(self._order_canceled_listener)
+            order.onFilled(self._order_filled_listener)
+            order.cancel()
+
+        for trade in trades:
+            print(trade.getInstrumentName(), trade.getTradeSettings())
+            trade.onReduced(self._trade_reduced_listener)
+            trade.onClosed(self._trade_closed_listener)
+            trade.close()
 
     def run(self, BrokerAPI):
 

@@ -25,7 +25,7 @@ min_trailing_stop_distance = 0.0005
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['balance', 'currency', 'margin_rate', 'start_year_utc', 'start_month_utc', 'start_day_utc', 'start_hour_utc', 'start_minute_utc', 'end_year_utc', 'end_month_utc', 'end_day_utc', 'end_hour_utc', 'end_minute_utc']
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 1000, hedging=True):
+    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 1000, hedging=False):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
         self.instruments_watchlist = {}
         self.current_virtual_datetime = utc.localize(datetime(
@@ -122,8 +122,11 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             raise Exception('Trailing stop distance('+str(trailing_stop_distance)+') should greater then zero.')
 
         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
-        self.account.orders.append(order)
-        return order
+        if len(self.account.order) == 0 or self.hedging:
+            self.account.orders.append(order)
+            return order
+        else:
+            oldest_account_order_with_instrument_name
 
     def getInstrument(self, instrument_name):
         if instrument_name in self.instruments_watchlist:
