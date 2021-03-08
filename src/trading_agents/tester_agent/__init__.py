@@ -22,6 +22,8 @@ class TradingAgent(object):
     def _order_filled_listener(self, order, trade):
         print('')
         print('An order filled.')
+        print(' Order settings:', order.order_settings)
+        print(' Order trade settings:', order.trade_settings)
         # global t
         if trade != None:
             print(' Instrument:', trade.instrument_name)

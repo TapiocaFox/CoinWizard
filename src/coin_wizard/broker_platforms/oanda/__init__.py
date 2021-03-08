@@ -171,7 +171,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def _import_trade_detail(self, trade_detail):
         # print(json.dumps(trade_detail, indent=2))
         trade_settings = {}
-        
+
         trade_settings['units'] = float(trade_detail['initialUnits'])
         trade_settings['current_units'] = float(trade_detail['currentUnits'])
 
@@ -408,7 +408,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             close_price = float(trade_reduced['price'])
                             spread = float(trade_reduced['halfSpreadCost'])
                             trade.reduced_listener(trade, units, realized_pl, close_price, spread, timestamp)
-
+                            trade = None
                 if 'tradeOpened' in transaction:
                     trade_opened = transaction['tradeOpened']
                     trade_id = trade_opened['tradeID']
