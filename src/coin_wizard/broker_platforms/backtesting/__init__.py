@@ -25,7 +25,7 @@ min_trailing_stop_distance = 0.0005
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['balance', 'currency', 'margin_rate', 'start_year_utc', 'start_month_utc', 'start_day_utc', 'start_hour_utc', 'start_minute_utc', 'end_year_utc', 'end_month_utc', 'end_day_utc', 'end_hour_utc', 'end_minute_utc']
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 1000):
+    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 1000, hedging=True):
         super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
         self.instruments_watchlist = {}
         self.current_virtual_datetime = utc.localize(datetime(
@@ -43,6 +43,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                                             int(broker_settings['end_hour_utc']),
                                             int(broker_settings['end_minute_utc'])
                                         ))
+        self.hedging = hedging
         self.account = BrokerPlatform.Account(self._update_account_handler)
         self.account.balance = float(broker_settings['balance'])
         self.account.currency = broker_settings['currency']
@@ -185,6 +186,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             self.account.balance += unrealized_pl
             self.account.unrealized_pl -= unrealized_pl
             trade.closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
+
+    def _trade_reduce_handler(self, trade, units):
+        pass
 
     def _trade_modify_handler(self, trade, trade_settings):
         pass
@@ -351,6 +355,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             ask_price = instrument.current_closeout_ask
             bid_price = instrument.current_closeout_bid
 
+            trade_settings['current_units'] = units
+
             if order_type == 'market':
                 if units > 0:
                     unrealized_pl = units*(bid_price - ask_price)
@@ -358,6 +364,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     trade.open_price = ask_price
                     trade.margin_rate = self.account.margin_rate
                     trade.unrealized_pl = unrealized_pl
+                    trade.reduce_handler = self._trade_reduce_handler
                     trade.close_handler = self._trade_close_handler
 
                     if 'trailing_stop_distance' in trade.trade_settings:
@@ -380,6 +387,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     trade.bid_price = ask_price
                     trade.margin_rate = self.account.margin_rate
                     trade.unrealized_pl = unrealized_pl
+                    trade.reduce_handler = self._trade_reduce_handler
                     trade.close_handler = self._trade_close_handler
 
                     if 'trailing_stop_distance' in trade.trade_settings:

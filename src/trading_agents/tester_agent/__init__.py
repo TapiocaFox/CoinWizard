@@ -95,6 +95,7 @@ class TradingAgent(object):
 
         for trade in trades:
             print(trade.getInstrumentName(), trade.getTradeSettings())
+            trade.onReduced(self._trade_reduced_listener)
             trade.onClosed(self._trade_closed_listener)
             trade.close()
 
@@ -113,7 +114,7 @@ class TradingAgent(object):
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
 
-        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -1, "take_profit": 0.543, "stop_lost": 2, "trailing_stop_distance": 0.1})
+        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -8, "take_profit": 0.543, "stop_lost": 2, "trailing_stop_distance": 0.1})
         order.onCanceled(self._order_canceled_listener)
         order.onFilled(self._order_filled_listener)
         print(order.order_id)

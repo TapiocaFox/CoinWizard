@@ -15,6 +15,7 @@ class Trade(object):
         self.closed_listener = None
         self.closed = False
         self.update_trade = update_trade
+        self.reduce_handler = None
         self.close_handler = None
 
     def close(self):
@@ -26,6 +27,11 @@ class Trade(object):
         if self.closed:
             raise Exception('Trade already closed.')
         return self.modify_handler(self, trade_settings)
+
+    def reduce(self, units):
+        if self.closed:
+            raise Exception('Trade already closed.')
+        return self.reduce_handler(self, units)
 
     def getInstrumentName(self):
         return self.instrument_name

@@ -386,7 +386,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 timestamp = dateutil.parser.isoparse(full_price['timestamp'])
 
                 order_be_filled = None
-                trade = None
+                trade_with_order = None
                 for order in self.account.orders:
                     if order.order_id == transaction['orderID']:
                         order_be_filled = order
@@ -407,14 +407,15 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             realized_pl = float(trade_reduced['realizedPL'])
                             close_price = float(trade_reduced['price'])
                             spread = float(trade_reduced['halfSpreadCost'])
+                            # print(trade.trade_settings)
                             trade.reduced_listener(trade, units, realized_pl, close_price, spread, timestamp)
-                            trade = None
+
                 if 'tradeOpened' in transaction:
                     trade_opened = transaction['tradeOpened']
                     trade_id = trade_opened['tradeID']
                     r = trades.TradeDetails(self.account_id, trade_id)
                     rv = self.oanda_api.request(r)
-                    trade = self._import_trade_detail(rv['trade'])
+                    trade_with_order = self._import_trade_detail(rv['trade'])
                     # print(json.dumps(rv, indent=2))
 
                     # print(json.dumps(transaction['tradeOpened'], indent=2))
@@ -441,5 +442,5 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 if order_be_filled != None:
                     # print(order_be_filled.order_id)
                     order_be_filled.filled = True
-                    order_be_filled.filled_listener(order_be_filled, trade)
+                    order_be_filled.filled_listener(order_be_filled, trade_with_order)
                     self.account.orders.remove(order_be_filled)
