@@ -140,6 +140,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         instrument.current_closeout_ask = price+half_spread
         instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
         instrument.tradable = True
+        instrument.quaters = 0
         # raise
         self.instruments_watchlist[instrument_name] = instrument
         return instrument
@@ -196,18 +197,23 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
             else:
                 instrument.tradable = True
+                quaters_of_1m = instrument.quaters
                 open = latest_candle['open']
                 high = latest_candle['high']
                 low = latest_candle['low']
                 close = latest_candle['close']
                 half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
-                price = 0.7*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))+0.1*close
-                instrument.current_closeout_bid = price-half_spread
-                instrument.current_closeout_ask = price+half_spread
+                bound_to_close = open+0.25*(close-open)*quaters_of_1m
+                print(quaters_of_1m)
+                price = 0.7*random.triangular(low, high)+0.2*random.triangular(min(bound_to_close, close), max(bound_to_close, close))+0.1*close
+                instrument.current_closeout_bid = round(price-half_spread, 6)
+                instrument.current_closeout_ask = round(price+half_spread, 6)
                 instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
+                instrument.quaters += 1
                 # print(latest_candle)
                 # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
                 if len(latest_candle_df) >= 2:
+                    instrument.quaters = 0
                     instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
         self.current_virtual_datetime += time_delta_15_seconds
 

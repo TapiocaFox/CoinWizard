@@ -342,8 +342,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # Update instruments
         for price in prices:
             instrument = self.instruments_watchlist[price['instrument']]
-            instrument.current_closeout_bid = price['closeoutBid']
-            instrument.current_closeout_ask = price['closeoutAsk']
+            instrument.current_closeout_bid = float(price['closeoutBid'])
+            instrument.current_closeout_ask = float(price['closeoutAsk'])
             instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
             instrument.tradable = price['tradeable']
             # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
