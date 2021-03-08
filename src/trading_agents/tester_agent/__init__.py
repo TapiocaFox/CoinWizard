@@ -15,39 +15,50 @@ class TradingAgent(object):
         print('Started directory:', agent_directory)
 
     def _order_canceled_listener(self, order, reason):
+        print('')
         print('An order canceled.')
+        print(' '+reason)
 
     def _order_filled_listener(self, order, trade):
+        print('')
         print('An order filled.')
         # global t
         if trade != None:
-            print(trade.getOpenPrice())
-            print(trade.getUnrealizedPL())
+            print(' Instrument:', trade.instrument_name)
+            print(' Open price:', trade.getOpenPrice())
+            print(' PL:', trade.getUnrealizedPL())
+            print(' Trade settings:', trade.getTradeSettings())
             trade.onReduced(self._trade_reduced_listener)
             trade.onClosed(self._trade_closed_listener)
 
-            print(trade.trade_settings['take_profit'])
+            # print(trade.trade_settings['take_profit'])
             if trade.trade_settings['take_profit'] == 0.543:
                 trade.close()
         # t = trade
 
     def _trade_reduced_listener(self, trade, units, realized_pl, close_price, spread, timestamp):
-        print('An trade reduced.')
-        print(units)
-        print(trade.getOpenPrice())
-        print(close_price)
-        print(realized_pl)
-        print(self.account.getBalance())
-        print(self.account.getUnrealizedPL())
-        print(trade.getTradeSettings())
+        print('')
+        print('A trade reduced.')
+        print(' Instrument:', trade.instrument_name)
+        print(' Units:', units)
+        print(' Open price:', trade.getOpenPrice())
+        print(' Close price:', close_price)
+        print(' Realized PL:', realized_pl)
+        print(' Trade settings:', trade.getTradeSettings())
+        print(' Account balance:', self.account.getBalance())
+        print(' Account unrealized PL:',self.account.getUnrealizedPL())
+
 
     def _trade_closed_listener(self, trade, realized_pl, close_price, spread, timestamp):
-        print('An trade closed.')
-        print(trade.getOpenPrice())
-        print(close_price)
-        print(realized_pl)
-        print(self.account.getBalance())
-        print(self.account.getUnrealizedPL())
+        print('')
+        print('A trade closed.')
+        print(' Instrument:', trade.instrument_name)
+        print(' Open price:', trade.getOpenPrice())
+        print(' Close price:', close_price)
+        print(' Realized PL:', realized_pl)
+        print(' Trade settings:', trade.getTradeSettings())
+        print(' Account balance:', self.account.getBalance())
+        print(' Account unrealized PL:',self.account.getUnrealizedPL())
 
 
         # print(datetime.now().timestamp()-timestamp.timestamp())
@@ -105,13 +116,14 @@ class TradingAgent(object):
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
 
-        # order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.1})
-        # order.onCanceled(self._order_canceled_listener)
-        # order.onFilled(self._order_filled_listener)
-        # print(order.order_id)
+        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.1})
+        order.onCanceled(self._order_canceled_listener)
+        order.onFilled(self._order_filled_listener)
+        print(order.order_id)
 
         # order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -2})
         # print(order.order_id)
+
         print(order.getOrderSettings())
         print(order.getTradeSettings())
 

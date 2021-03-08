@@ -171,8 +171,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def _import_trade_detail(self, trade_detail):
         # print(json.dumps(trade_detail, indent=2))
         trade_settings = {}
-
-        trade_settings['units'] = float(trade_detail['currentUnits'])
+        
+        trade_settings['units'] = float(trade_detail['initialUnits'])
+        trade_settings['current_units'] = float(trade_detail['currentUnits'])
 
         if "takeProfitOrder" in trade_detail:
             trade_settings['take_profit'] = float(trade_detail['takeProfitOrder']['price'])
@@ -246,7 +247,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         for order in self.account.orders:
             if order.order_id == order_id:
                 order.canceled = True
-                order.canceled_listener(order, 'Canceled by oanda.')
+                order.canceled_listener(order, reason)
                 self.account.orders.remove(order)
                 break
 
@@ -331,7 +332,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # print(json.dumps(trade_detail, indent=2))
 
         trade_settings = {}
-        trade_settings['units'] = float(trade_detail['currentUnits'])
+        trade_settings['units'] = float(trade_detail['initialUnits'])
+        trade_settings['current_units'] = float(trade_detail['currentUnits'])
 
         if "takeProfitOrder" in trade_detail:
             trade_settings['take_profit'] = float(trade_detail['takeProfitOrder']['price'])
@@ -341,7 +343,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         if "trailingStopLossOrder" in trade_detail:
             trade_settings['trailing_stop_distance'] = float(trade_detail['trailingStopLossOrder']['distance'])
-
+        # print(trade_settings)
         trades.trade_settings = trade_settings
         if 'unrealizedPL' in trade_detail:
             trade.unrealized_pl = float(trade_detail['unrealizedPL'])
@@ -437,7 +439,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                                 self.account.trades.remove(trade)
 
                 if order_be_filled != None:
-                    print(order_be_filled.order_id)
+                    # print(order_be_filled.order_id)
                     order_be_filled.filled = True
                     order_be_filled.filled_listener(order_be_filled, trade)
                     self.account.orders.remove(order_be_filled)
