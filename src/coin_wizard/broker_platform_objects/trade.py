@@ -14,16 +14,17 @@ class Trade(object):
         self.closed_listener = None
         self.closed = False
         self.update_trade = update_trade
+        self.close_handler = None
 
     def close(self):
         if self.closed:
             raise Exception('Trade already closed.')
-        return self.close_handler(self.trade_id)
+        return self.close_handler(self)
 
     def modify(self, trade_settings):
         if self.closed:
             raise Exception('Trade already closed.')
-        return self.modify_handler(self.trade_id, trade_settings)
+        return self.modify_handler(self, trade_settings)
 
     def getInstrumentName(self):
         return self.instrument_name

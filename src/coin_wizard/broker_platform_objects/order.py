@@ -25,7 +25,7 @@ class Order(object):
     def cancel(self):
         if self.canceled or self.filled:
             raise Exception('Order already closed.')
-        return self.cancel_handler(self.order_id)
+        return self.cancel_handler(self)
 
     def onFilled(self, filled_listener):
         self.filled_listener = filled_listener
