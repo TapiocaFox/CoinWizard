@@ -11,6 +11,7 @@ class Trade(object):
         self.trade_settings = trade_settings
         self.price = open_price
         self.unrealized_pl = 0
+        self.reduced_listener = None
         self.closed_listener = None
         self.closed = False
         self.update_trade = update_trade
@@ -33,11 +34,15 @@ class Trade(object):
         return self.open_price
 
     def getTradeSettings(self):
+        self.update_trade(self)
         return self.trade_settings
 
     def getUnrealizedPL(self):
         self.update_trade(self)
         return self.unrealized_pl
+
+    def onReduced(self, reduced_listener):
+        self.reduced_listener = reduced_listener
 
     def onClosed(self, closed_listener):
         self.closed_listener = closed_listener

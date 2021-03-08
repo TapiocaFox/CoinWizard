@@ -162,6 +162,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             order.cancel_handler = self._order_cancel_handler
             # order
             self.account.orders.append(order)
+            # print(self.account.orders)
             return order
         else:
             # print(order_detail)
@@ -219,6 +220,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         else:
             trade.unrealized_pl = 0.0
         self.account.trades.append(trade)
+        trade.latest_update_datetime = datetime.now()
+        # print(self.account.trades)
         return trade
 
     def _convert_mid_candles_to_dataframe(self, candles):
@@ -318,6 +321,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         self.account.latest_update_datetime = datetime.now()
 
     def _update_trade_handler(self, trade):
+        if 1000*(datetime.now().timestamp() - trade.latest_update_datetime.timestamp()) < update_interval_threshold_ms:
+            # print('skipped.', 1000*(datetime.now().timestamp() - self.account.latest_update_datetime.timestamp()))
+            return
         r = trades.TradeDetails(self.account_id, trade.trade_id)
         rv = self.oanda_api.request(r)
 
@@ -339,6 +345,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         trades.trade_settings = trade_settings
         if 'unrealizedPL' in trade_detail:
             trade.unrealized_pl = float(trade_detail['unrealizedPL'])
+
+        trade.latest_update_datetime = datetime.now()
+
 
     def _loop(self):
         instruments_string = ','.join([i for i in self.instruments_watchlist])
@@ -373,35 +382,62 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 closeout_bid = full_price['closeoutBid']
                 closeout_ask = full_price['closeoutAsk']
                 timestamp = dateutil.parser.isoparse(full_price['timestamp'])
+
+                order_be_filled = None
+                trade = None
                 for order in self.account.orders:
                     if order.order_id == transaction['orderID']:
-                        order.filled = True
+                        order_be_filled = order
+                # print(json.dumps(transaction['tradesClosed'], indent=2))
+                if 'tradeReduced' in transaction:
+                    # print(json.dumps(transaction, indent=2))
+                    # print(order_be_filled)
+                    # for order in self.account.orders:
+                    #     print(order.order_id)
+                    trade_reduced = transaction['tradeReduced']
+                    trade_id = trade_opened['tradeID']
+                    for trade in self.account.trades:
+                        # print(trade.trade_id)
+                        # print(trade.trade_id == trade_id)
+                        # print(trade.closed_listener)
+                        if trade.trade_id == trade_id:
+                            units = float(trade_reduced['units'])
+                            realized_pl = float(trade_reduced['realizedPL'])
+                            close_price = float(trade_reduced['price'])
+                            spread = float(trade_reduced['halfSpreadCost'])
+                            trade.reduced_listener(trade, units, realized_pl, close_price, spread, timestamp)
 
-                        trade = None
-                        # print(json.dumps(transaction['tradesClosed'], indent=2))
-                        if 'tradeOpened' in transaction:
-                            trade_opened = transaction['tradeOpened']
-                            trade_id = trade_opened['tradeID']
-                            r = trades.TradeDetails(self.account_id, trade_id)
-                            rv = self.oanda_api.request(r)
-                            trade = self._import_trade_detail(rv['trade'])
-                            # print(json.dumps(rv, indent=2))
+                if 'tradeOpened' in transaction:
+                    trade_opened = transaction['tradeOpened']
+                    trade_id = trade_opened['tradeID']
+                    r = trades.TradeDetails(self.account_id, trade_id)
+                    rv = self.oanda_api.request(r)
+                    trade = self._import_trade_detail(rv['trade'])
+                    # print(json.dumps(rv, indent=2))
 
-                            # print(json.dumps(transaction['tradeOpened'], indent=2))
-                        if 'tradesClosed' in transaction:
-                            trades_closed = transaction['tradesClosed']
-                            for trade_closed in trades_closed:
-                                trade_id = trade_closed['tradeID']
-                                for trade in self.account.trades:
-                                    # print(trade.trade_id)
-                                    # print(trade.trade_id == trade_id)
-                                    # print(trade.closed_listener)
-                                    if trade.trade_id == trade_id:
-                                        realized_pl = float(trade_closed['realizedPL'])
-                                        close_price = float(trade_closed['price'])
-                                        spread = float(trade_closed['halfSpreadCost'])
-                                        trade.closed = True
-                                        trade.closed_listener(trade, realized_pl, close_price, spread, timestamp)
-                                        self.account.trades.remove(trade)
-                        order.filled_listener(order, trade)
-                        self.account.orders.remove(order)
+                    # print(json.dumps(transaction['tradeOpened'], indent=2))
+                if 'tradesClosed' in transaction:
+                    # print('testestestestes')
+
+                    trades_closed = transaction['tradesClosed']
+                    for trade_closed in trades_closed:
+                        trade_id = trade_closed['tradeID']
+                        # print(123, trade_id)
+
+                        for trade in self.account.trades:
+                            # print(321, trade.trade_id)
+                            # print(trade.trade_id == trade_id)
+                            # print(trade.closed_listener)
+                            if trade.trade_id == trade_id:
+                                realized_pl = float(trade_closed['realizedPL'])
+                                close_price = float(trade_closed['price'])
+                                spread = float(trade_closed['halfSpreadCost'])
+                                trade.closed = True
+                                trade.closed_listener(trade, realized_pl, close_price, spread, timestamp)
+                                self.account.trades.remove(trade)
+
+                if order_be_filled != None:
+                    print(order_be_filled.order_id)
+                    order_be_filled.filled = True
+                    order_be_filled.filled_listener(order_be_filled, trade)
+                    self.account.orders.remove(order_be_filled)

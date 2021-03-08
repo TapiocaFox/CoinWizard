@@ -20,15 +20,26 @@ class TradingAgent(object):
     def _order_filled_listener(self, order, trade):
         print('An order filled.')
         # global t
-        print(trade.getOpenPrice())
-        print(trade.getUnrealizedPL())
-        trade.onClosed(self._trade_closed_listener)
+        if trade != None:
+            print(trade.getOpenPrice())
+            print(trade.getUnrealizedPL())
+            trade.onReduced(self._trade_reduced_listener)
+            trade.onClosed(self._trade_closed_listener)
 
-        print(trade.trade_settings['take_profit'])
-        if trade.trade_settings['take_profit'] == 0.543:
-            trade.close()
+            print(trade.trade_settings['take_profit'])
+            if trade.trade_settings['take_profit'] == 0.543:
+                trade.close()
         # t = trade
 
+    def _trade_reduced_listener(self, trade, units, realized_pl, close_price, spread, timestamp):
+        print('An trade reduced.')
+        print(units)
+        print(trade.getOpenPrice())
+        print(close_price)
+        print(realized_pl)
+        print(self.account.getBalance())
+        print(self.account.getUnrealizedPL())
+        print(trade.getTradeSettings())
 
     def _trade_closed_listener(self, trade, realized_pl, close_price, spread, timestamp):
         print('An trade closed.')
@@ -84,7 +95,7 @@ class TradingAgent(object):
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
 
-        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.1})
+        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 4, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.1})
         order.onCanceled(self._order_canceled_listener)
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
@@ -94,10 +105,10 @@ class TradingAgent(object):
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
 
-        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.1})
-        order.onCanceled(self._order_canceled_listener)
-        order.onFilled(self._order_filled_listener)
-        print(order.order_id)
+        # order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.1})
+        # order.onCanceled(self._order_canceled_listener)
+        # order.onFilled(self._order_filled_listener)
+        # print(order.order_id)
 
         # order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -2})
         # print(order.order_id)
