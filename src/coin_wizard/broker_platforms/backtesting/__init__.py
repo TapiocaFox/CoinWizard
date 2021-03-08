@@ -122,11 +122,10 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             raise Exception('Trailing stop distance('+str(trailing_stop_distance)+') should greater then zero.')
 
         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
-        if len(self.account.order) == 0 or self.hedging:
-            self.account.orders.append(order)
-            return order
-        else:
-            oldest_account_order_with_instrument_name
+        order.cancel_handler = self._order_cancel_handler
+        self.account.orders.append(order)
+        return order
+
 
     def getInstrument(self, instrument_name):
         if instrument_name in self.instruments_watchlist:
@@ -474,3 +473,50 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     print('Too many failures, skipped next loop.')
                     break
             self.latest_loop_datetime = datetime.now()
+
+
+
+# if len(self.account.trades) == 0 or self.hedging:
+#     order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
+#     order.cancel_handler = self._order_cancel_handler
+#     self.account.orders.append(order)
+#     return order
+# else:
+#     oldest_account_trade_with_instrument_name = self.account.trades[0]
+#     # Same sign
+#     # print(oldest_account_trade_with_instrument_name.trade_settings['current_units']*units)
+#     if oldest_account_trade_with_instrument_name.trade_settings['current_units']*units > 0:
+#         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
+#         order.cancel_handler = self._order_cancel_handler
+#         self.account.orders.append(order)
+#         return order
+#     else:
+#         # self.account.orders.append(order)
+#         # return order
+#         sign = 1
+#         if units < 0:
+#             sign = -1
+#         while units != 0:
+#             print(units)
+#             if len(self.account.trades) == 0:
+#                 order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
+#                 order.no_hedging_trade_settings = trade_settings.copy()
+#                 order.no_hedging_trade_settings[units] = units
+#                 order.cancel_handler = self._order_cancel_handler
+#                 self.account.orders.append(order)
+#                 return order
+#             else:
+#                 oldest_account_trade_with_instrument_name = self.account.trades[0]
+#                 if sign*(units + oldest_account_trade_with_instrument_name.trade_settings['current_units']) > 0:
+#                     oldest_account_trade_with_instrument_name.close()
+#                     units += oldest_account_trade_with_instrument_name.trade_settings['current_units']
+#                 # Need reduce
+#                 elif sign*(units + oldest_account_trade_with_instrument_name.trade_settings['current_units']) < 0:
+#                     units_to_be_reduce = sign*units
+#                     oldest_account_trade_with_instrument_name.reduce(units_to_be_reduce)
+#                     units = 0
+#                 else:
+#                     units = 0
+#         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
+#         order.no_trade = True
+#         return order
