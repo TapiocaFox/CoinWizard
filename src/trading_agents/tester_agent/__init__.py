@@ -105,7 +105,7 @@ class TradingAgent(object):
             trade.close()
 
     def run(self, BrokerAPI):
-
+        # BrokerAPI.resetByDatetime(eastern.localize(datetime(2020, 1, 8, 0, 0)), eastern.localize(datetime(2020, 1, 11, 23, 59)))
         account = BrokerAPI.getAccount()
         self.account = account
         orders = account.getOrders()

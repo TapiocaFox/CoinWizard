@@ -45,8 +45,11 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                                         ))
         self.hedging = hedging
         self.account = BrokerPlatform.Account(self._update_account_handler)
+        self.balance = float(broker_settings['balance'])
         self.account.balance = float(broker_settings['balance'])
+        self.currency = broker_settings['currency']
         self.account.currency = broker_settings['currency']
+        self.margin_rate = float(broker_settings['margin_rate'])
         self.account.margin_rate = float(broker_settings['margin_rate'])
         self.account.margin_used = 0.0
         self.account.margin_available = float(broker_settings['balance'])
@@ -130,10 +133,11 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def getInstrument(self, instrument_name):
         if instrument_name in self.instruments_watchlist:
             return self.instruments_watchlist[instrument_name]
+        # print(self.current_virtual_datetime, self.end_datetime)
 
         instrument = BrokerPlatform.Instrument(instrument_name, self._update_instrument_handler)
         instrument.recent_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_7_days, self.current_virtual_datetime)
-        instrument.future_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime , self.end_datetime - time_delta_7_days)
+        instrument.future_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime , self.end_datetime + time_delta_7_days)
         latest_candle = instrument.recent_1m_candles.tail(1).iloc[0]
 
         open = latest_candle['open']
@@ -154,8 +158,16 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         return instrument
 
     # For Neural Net
-    def resetByDate(self, start_datetime, end_datetime):
-        pass
+    def resetByDatetime(self, start_datetime, end_datetime):
+        self.instruments_watchlist = {}
+        self.current_virtual_datetime = start_datetime
+        self.end_datetime = end_datetime
+        self.account = BrokerPlatform.Account(self._update_account_handler)
+        self.account.balance = self.balance
+        self.account.margin_rate = self.margin_rate
+        self.account.margin_used = 0.0
+        self.account.margin_available = self.balance
+        self.account.unrealized_pl = 0.0
 
     def onEnded(self, ended_listener):
         self.ended_listener = ended_listener

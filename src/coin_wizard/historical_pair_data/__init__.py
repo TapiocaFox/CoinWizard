@@ -163,7 +163,8 @@ def update_historical_pair_data(set_percentage=set_percentage_prevent, log_text=
 
 def get_historical_pair_data(pair, from_datetime, to_datetime):
     if from_datetime > to_datetime:
-        return None
+        print(from_datetime, to_datetime)
+        raise Exception('From datetime greater than to datetime.')
     pair = translate_pair_to_unsplited(pair)
     timestamp_lower = datetime.timestamp(from_datetime)
     timestamp_higher = datetime.timestamp(to_datetime)
@@ -211,6 +212,7 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
 
 def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone='UTC'):
     df =  pd.DataFrame(get_historical_pair_data(pair, from_datetime, to_datetime))
+    # print(df)
     df['utc_timestamp']= pd.DatetimeIndex(pd.to_datetime(df['utc_timestamp'], unit='s')).tz_localize('UTC').tz_convert(target_timezone)
     df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
     # print(df_new['timestamp'])
