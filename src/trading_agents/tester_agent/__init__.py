@@ -105,7 +105,7 @@ class TradingAgent(object):
             trade.close()
 
     def run(self, BrokerAPI):
-        # BrokerAPI.resetByDatetime(eastern.localize(datetime(2020, 1, 8, 0, 0)), eastern.localize(datetime(2020, 1, 11, 23, 59)))
+        BrokerAPI.resetByDatetime(eastern.localize(datetime(2020, 1, 8, 0, 0)), eastern.localize(datetime(2020, 1, 11, 23, 59)))
         account = BrokerAPI.getAccount()
         self.account = account
         orders = account.getOrders()
@@ -165,6 +165,8 @@ class TradingAgent(object):
         instrument = BrokerAPI.getInstrument('EUR_USD')
         BrokerAPI.onLoop(self._run_loop)
         BrokerAPI.onEvery15Second(self._every_15_second_loop)
+        # BrokerAPI.resetByDatetime(eastern.localize(datetime(2020, 1, 8, 0, 0)), eastern.localize(datetime(2020, 1, 11, 23, 59)))
+        # self.account = BrokerAPI.getAccount()
 
     def stop_running(self, BrokerAPI):
         print('Agent stopped.')

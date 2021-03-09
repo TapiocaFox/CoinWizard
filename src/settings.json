@@ -1,5 +1,5 @@
 {
-  "trading_agent": "tester_agent",
+  "trading_agent": "hb001",
   "broker_platform": "oanda",
   "test_train_broker_platform": "backtesting"
 }

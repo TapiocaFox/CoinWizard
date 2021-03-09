@@ -31,6 +31,7 @@ Temporary Items
 # Coin wizard
 temp/
 pair_data/
+hb001/
 trading_agents_files/
 states.json
 

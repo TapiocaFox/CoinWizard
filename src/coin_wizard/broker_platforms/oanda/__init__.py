@@ -106,7 +106,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             return self.instruments_watchlist[instrument_name]
         params = {
             "granularity": "M1",
-            "count": 2000,
+            "count": 5000,
             # "count": 3,
         }
 
