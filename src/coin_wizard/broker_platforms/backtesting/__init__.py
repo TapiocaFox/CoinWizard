@@ -167,30 +167,55 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
     def _trade_close_handler(self, trade):
         instrument = self.instruments_watchlist[trade.instrument_name]
-        units = trade.trade_settings['units']
+        current_units = trade.trade_settings['current_units']
         ask_price = instrument.current_closeout_ask
         bid_price = instrument.current_closeout_bid
         spread = ask_price-bid_price
-        unrealized_pl = 0.0
-        if units > 0:
-            unrealized_pl = units*(bid_price - trade.open_price)
-            trade.unrealized_pl = unrealized_pl
+        realized_pl = 0.0
+
+        if current_units > 0:
+            realized_pl = current_units*(bid_price - trade.open_price)
+            trade.unrealized_pl = 0.0
             trade.closed = True
             self.account.trades.remove(trade)
-            self.account.balance += unrealized_pl
-            self.account.unrealized_pl -= unrealized_pl
-            trade.closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
+            self.account.balance += realized_pl
+            self.account.margin_used -= trade.margin_rate*abs(current_units)*(ask_price+bid_price)/2.0
+            self.account.unrealized_pl -= realized_pl
+            trade.closed_listener(trade, realized_pl, bid_price, spread, self.current_virtual_datetime)
         else:
-            unrealized_pl = -units*(trade.open_price - ask_price)
-            trade.unrealized_pl = unrealized_pl
+            realized_pl = -current_units*(trade.open_price - ask_price)
+            trade.unrealized_pl = 0.0
             trade.closed = True
             self.account.trades.remove(trade)
-            self.account.balance += unrealized_pl
-            self.account.unrealized_pl -= unrealized_pl
-            trade.closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
+            self.account.balance += realized_pl
+            self.account.margin_used -= trade.margin_rate*abs(current_units)*(ask_price+bid_price)/2.0
+            self.account.unrealized_pl -= realized_pl
+            trade.closed_listener(trade, realized_pl, ask_price, spread, self.current_virtual_datetime)
 
     def _trade_reduce_handler(self, trade, units):
-        pass
+        instrument = self.instruments_watchlist[trade.instrument_name]
+        reduce_units = abs(units)
+        ask_price = instrument.current_closeout_ask
+        bid_price = instrument.current_closeout_bid
+        spread = ask_price-bid_price
+        realized_pl = 0.0
+
+        if trade.trade_settings['current_units'] > 0:
+            realized_pl = reduce_units*(bid_price - trade.open_price)
+            trade.trade_settings['current_units'] -= reduce_units
+            trade.unrealized_pl -= realized_pl
+            self.account.balance += realized_pl
+            self.account.margin_used -= trade.margin_rate*abs(reduce_units)*(ask_price+bid_price)/2.0
+            self.account.unrealized_pl -= realized_pl
+            trade.reduced_listener(trade, -reduce_units, realized_pl, bid_price, spread, self.current_virtual_datetime)
+        else:
+            realized_pl = reduce_units*(trade.open_price - ask_price)
+            trade.trade_settings['current_units'] += reduce_units
+            trade.unrealized_pl -= realized_pl
+            self.account.balance += realized_pl
+            self.account.margin_used -= trade.margin_rate*abs(reduce_units)*(ask_price+bid_price)/2.0
+            self.account.unrealized_pl -= realized_pl
+            trade.reduced_listener(trade, reduce_units, realized_pl, ask_price, spread, self.current_virtual_datetime)
 
     def _trade_modify_handler(self, trade, trade_settings):
         pass
@@ -199,7 +224,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         pass # No need for backtesting.
 
     def _update_account_handler(self):
-        pass # No need for backtesting.
+        self.account.equity = self.account.balance+self.account.unrealized_pl
+        self.account.margin_available = max(0, self.account.equity-self.account.margin_used)
 
     def _update_trade_handler(self, trade):
         pass # No need for backtesting.
@@ -209,8 +235,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     #     self.account.trades.remove(trade)
     #     self.account.balance += unrealized_pl
     #     trade.closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
-
-    def _loop(self):
+    def _instrument_loop(self):
         # Update instruments
         for instrument_name in self.instruments_watchlist:
             instrument = self.instruments_watchlist[instrument_name]
@@ -255,15 +280,15 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 if len(latest_candle_df) >= 2:
                     instrument.quaters = 0
                     instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
-        self.current_virtual_datetime += time_delta_15_seconds
 
+    def _trade_and_account_loop(self):
         # Update trades, caluculate PL.
         unrealized_pl_sum = 0.0
         margin_used_sum = 0.0
 
         for trade in self.account.trades:
             instrument = self.instruments_watchlist[trade.instrument_name]
-            units = trade.trade_settings['units']
+            current_units = trade.trade_settings['current_units']
             ask_price = instrument.current_closeout_ask
             bid_price = instrument.current_closeout_bid
             spread = ask_price-bid_price
@@ -271,8 +296,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
             # Check if we need to close trade
             trade_settings = trade.trade_settings
-            if units > 0:
-                unrealized_pl = units*(bid_price - trade.open_price)
+            if current_units > 0:
+                unrealized_pl = current_units*(bid_price - trade.open_price)
                 trade.unrealized_pl = unrealized_pl
                 if "take_profit" in trade_settings:
                     take_profit = trade_settings['take_profit']
@@ -301,7 +326,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         continue
             else:
-                unrealized_pl = -units*(trade.open_price - ask_price)
+                unrealized_pl = -current_units*(trade.open_price - ask_price)
                 trade.unrealized_pl = unrealized_pl
                 if "take_profit" in trade_settings:
                     take_profit = trade_settings['take_profit']
@@ -330,17 +355,20 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         continue
             unrealized_pl_sum += unrealized_pl
-            margin_used_sum += units*(ask_price+bid_price)/2.0
+            margin_used_sum += trade.margin_rate*abs(current_units)*(ask_price+bid_price)/2.0
 
-        self.account.unrealized_pl = unrealized_pl_sum
         self.account.margin_used = margin_used_sum
+        self.account.unrealized_pl = unrealized_pl_sum
+
         # print(unrealized_pl_sum, margin_used_sum)
         # Check account states. Margin Closeout etc.
-        equity = self.account.balance+margin_used_sum
+        equity = self.account.balance+unrealized_pl_sum
+        self.account.margin_available = max(0, equity-margin_used_sum)
 
         if margin_used_sum* 0.5 > equity:
-            pass
+            raise Exception('You have a margin closeout!')
 
+    def _order_loop(self):
         # Update orders.
         orders_to_be_canceled = []
         orders_to_be_filled = []
@@ -350,7 +378,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             instrument = self.instruments_watchlist[instrument_name]
 
             order_settings = order.order_settings
-            trade_settings = order.trade_settings
+            trade_settings = order.trade_settings.copy()
 
             order_type = order_settings['type']
             units = order.trade_settings['units']
@@ -421,21 +449,94 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             open_price = trade.open_price
             margin_rate = trade.margin_rate
 
-            if units*open_price*margin_rate > self.account.margin_available:
-                order_to_be_canceled.append([order, 'Not enough Margin available.'])
+            if abs(units)*open_price*margin_rate > self.account.margin_available:
+                orders_to_be_canceled.append([order, 'Not enough Margin available.'])
             else:
-                self.account.unrealized_pl += trade.unrealized_pl
-                self.account.trades.append(trade)
-                self.account.orders.remove(order)
-                order.filled = True
-                order.filled_listener(order, trade)
+                if len(self.account.trades) == 0 or self.hedging:
+                    trade.unrealized_pl *= (units/trade.trade_settings['units'])
+                    trade.trade_settings['units'] = units
+                    trade.trade_settings['current_units'] = units
+                    self.account.margin_used += trade.margin_rate*abs(units)*(ask_price+bid_price)/2.0
+                    self.account.unrealized_pl += trade.unrealized_pl
+                    self.account.trades.append(trade)
+                    self.account.orders.remove(order)
+                    order.filled = True
+                    order.filled_listener(order, trade)
+                else:
+                    # units = trade.trade_settings['units']
+                    sign = 1
+                    if units < 0:
+                        sign = -1
+                    while units != 0:
+                        # print(units)
+                        # Need new trade
+                        if len(self.account.trades) == 0:
+                            trade.unrealized_pl *= (units/trade.trade_settings['units'])
+                            trade.trade_settings['units'] = units
+                            trade.trade_settings['current_units'] = units
+                            self.account.margin_used += trade.margin_rate*abs(units)*(ask_price+bid_price)/2.0
+                            self.account.unrealized_pl += trade.unrealized_pl
+                            self.account.trades.append(trade)
+                            self.account.orders.remove(order)
+                            order.filled = True
+                            order.filled_listener(order, trade)
+                            units = 0
+                        else:
+                            oldest_account_trade_with_instrument_name = None
+                            for t in self.account.trades:
+                                if t.instrument_name == trade.instrument_name:
+                                    oldest_account_trade_with_instrument_name = t
+                                    break
+
+                            # Need new trade
+                            if oldest_account_trade_with_instrument_name == None:
+                                trade.unrealized_pl *= (units/trade.trade_settings['units'])
+                                trade.trade_settings['units'] = units
+                                trade.trade_settings['current_units'] = units
+                                self.account.margin_used += trade.margin_rate*abs(units)*(ask_price+bid_price)/2.0
+                                self.account.unrealized_pl += trade.unrealized_pl
+                                self.account.trades.append(trade)
+                                self.account.orders.remove(order)
+                                order.filled = True
+                                order.filled_listener(order, trade)
+                                units = 0
+
+                            # Need close trade
+                            elif sign*(units + oldest_account_trade_with_instrument_name.trade_settings['current_units']) > 0:
+                                oldest_account_trade_with_instrument_name.close()
+                                # print(oldest_account_trade_with_instrument_name.trade_settings['current_units'])
+                                units += oldest_account_trade_with_instrument_name.trade_settings['current_units']
+                                # time.sleep(1)
+                            # Need reduce
+                            elif sign*(units + oldest_account_trade_with_instrument_name.trade_settings['current_units']) < 0:
+                                units_to_be_reduce = sign*units
+                                oldest_account_trade_with_instrument_name.reduce(units_to_be_reduce)
+                                self.account.orders.remove(order)
+                                order.filled = True
+                                order.filled_listener(order, None)
+
+                                units = 0
+                            # Clean
+                            else:
+                                self.account.orders.remove(order)
+                                order.filled = True
+                                order.filled_listener(order, None)
+
+                                units = 0
 
         for order_to_be_canceled in orders_to_be_canceled:
-            order = order_to_be_filled[0]
-            reason = order_to_be_filled[1]
+            order = order_to_be_canceled[0]
+            reason = order_to_be_canceled[1]
             order.canceled = True
             self.account.orders.remove(order)
             order.canceled_listener(order, reason)
+
+    def _loop(self):
+        self._instrument_loop()
+        self._trade_and_account_loop()
+        self._order_loop()
+
+        self.current_virtual_datetime += time_delta_15_seconds
 
     def _loop_wrapper(self):
         self.before_loop()
@@ -473,50 +574,3 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     print('Too many failures, skipped next loop.')
                     break
             self.latest_loop_datetime = datetime.now()
-
-
-
-# if len(self.account.trades) == 0 or self.hedging:
-#     order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
-#     order.cancel_handler = self._order_cancel_handler
-#     self.account.orders.append(order)
-#     return order
-# else:
-#     oldest_account_trade_with_instrument_name = self.account.trades[0]
-#     # Same sign
-#     # print(oldest_account_trade_with_instrument_name.trade_settings['current_units']*units)
-#     if oldest_account_trade_with_instrument_name.trade_settings['current_units']*units > 0:
-#         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
-#         order.cancel_handler = self._order_cancel_handler
-#         self.account.orders.append(order)
-#         return order
-#     else:
-#         # self.account.orders.append(order)
-#         # return order
-#         sign = 1
-#         if units < 0:
-#             sign = -1
-#         while units != 0:
-#             print(units)
-#             if len(self.account.trades) == 0:
-#                 order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
-#                 order.no_hedging_trade_settings = trade_settings.copy()
-#                 order.no_hedging_trade_settings[units] = units
-#                 order.cancel_handler = self._order_cancel_handler
-#                 self.account.orders.append(order)
-#                 return order
-#             else:
-#                 oldest_account_trade_with_instrument_name = self.account.trades[0]
-#                 if sign*(units + oldest_account_trade_with_instrument_name.trade_settings['current_units']) > 0:
-#                     oldest_account_trade_with_instrument_name.close()
-#                     units += oldest_account_trade_with_instrument_name.trade_settings['current_units']
-#                 # Need reduce
-#                 elif sign*(units + oldest_account_trade_with_instrument_name.trade_settings['current_units']) < 0:
-#                     units_to_be_reduce = sign*units
-#                     oldest_account_trade_with_instrument_name.reduce(units_to_be_reduce)
-#                     units = 0
-#                 else:
-#                     units = 0
-#         order = BrokerPlatform.Order('virtual_order_id', instrument_name, order_settings, trade_settings)
-#         order.no_trade = True
-#         return order

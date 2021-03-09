@@ -137,10 +137,10 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             }
 
             if "price" in order_detail:
-                order_settings['price'] = order_detail['price']
+                order_settings['price'] = float(order_detail['price'])
 
             if "priceBound" in order_detail:
-                order_settings['bound'] = order_detail['priceBound']
+                order_settings['bound'] = float(order_detail['priceBound'])
 
             trade_settings = {}
 
@@ -148,13 +148,13 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 trade_settings['units'] = float(order_detail['units'])
 
             if "takeProfitOnFill" in order_detail:
-                trade_settings['take_profit'] = order_detail['takeProfitOnFill']['price']
+                trade_settings['take_profit'] = float(order_detail['takeProfitOnFill']['price'])
 
             if "stopLossOnFill" in order_detail:
-                trade_settings['stop_lost'] = order_detail['stopLossOnFill']['price']
+                trade_settings['stop_lost'] = float(order_detail['stopLossOnFill']['price'])
 
             if "trailingStopLossOnFill" in order_detail:
-                trade_settings['trailing_stop_distance'] = order_detail['trailingStopLossOnFill']['distance']
+                trade_settings['trailing_stop_distance'] = float(order_detail['trailingStopLossOnFill']['distance'])
 
             # print(json.dumps(order_detail, indent=2))
 
@@ -277,6 +277,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # if 'orderFillTransaction' in rv:
         #     self._remove_trade_detail(trade_id)
         #     return
+                # print(json.dumps(trade_detail, indent=2))
+
         if 'orderRejectTransaction' in rv:
             raise Exception('Trade close rejected by oanda!')
 
@@ -431,7 +433,9 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             # print(321, trade.trade_id)
                             # print(trade.trade_id == trade_id)
                             # print(trade.closed_listener)
+
                             if trade.trade_id == trade_id:
+                                # print(json.dumps(trade_closed, indent=2))
                                 realized_pl = float(trade_closed['realizedPL'])
                                 close_price = float(trade_closed['price'])
                                 spread = float(trade_closed['halfSpreadCost'])

@@ -10,6 +10,8 @@ from datetime import datetime
 from coin_wizard.historical_pair_data import plot_historical_pair_data
 # import state manager
 t = None
+
+c = 0
 class TradingAgent(object):
     def __init__(self, agent_directory):
         print('Started directory:', agent_directory)
@@ -30,6 +32,10 @@ class TradingAgent(object):
             print(' Open price:', trade.getOpenPrice())
             print(' Unrealized PL:', trade.getUnrealizedPL())
             print(' Trade settings:', trade.getTradeSettings())
+            print(' Account balance:', self.account.getBalance())
+            print(' Account unrealized PL:',self.account.getUnrealizedPL())
+            print(' Account margin available:', self.account.getMarginAvailable())
+            print(' Account margin used:', self.account.getMarginUsed())
             trade.onReduced(self._trade_reduced_listener)
             trade.onClosed(self._trade_closed_listener)
 
@@ -49,7 +55,8 @@ class TradingAgent(object):
         print(' Trade settings:', trade.getTradeSettings())
         print(' Account balance:', self.account.getBalance())
         print(' Account unrealized PL:',self.account.getUnrealizedPL())
-
+        print(' Account margin available:', self.account.getMarginAvailable())
+        print(' Account margin used:', self.account.getMarginUsed())
 
     def _trade_closed_listener(self, trade, realized_pl, close_price, spread, timestamp):
         print('')
@@ -61,6 +68,8 @@ class TradingAgent(object):
         print(' Trade settings:', trade.getTradeSettings())
         print(' Account balance:', self.account.getBalance())
         print(' Account unrealized PL:',self.account.getUnrealizedPL())
+        print(' Account margin available:', self.account.getMarginAvailable())
+        print(' Account margin used:', self.account.getMarginUsed())
 
 
         # print(datetime.now().timestamp()-timestamp.timestamp())
@@ -76,6 +85,10 @@ class TradingAgent(object):
         pass
 
     def _every_15_second_loop(self, BrokerAPI):
+        global c
+        if c < 6:
+            c += 1
+            return
         print('15 second passed.', datetime.now())
         orders = self.account.getOrders()
         trades = self.account.getTrades()
@@ -127,7 +140,13 @@ class TradingAgent(object):
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
 
-        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -8, "take_profit": 0.543, "stop_lost": 2, "trailing_stop_distance": 0.1})
+        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -1, "take_profit": 0.543, "stop_lost": 2, "trailing_stop_distance": 0.1})
+        order.onCanceled(self._order_canceled_listener)
+        order.onFilled(self._order_filled_listener)
+        print(order.order_id)
+
+
+        order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": -8000, "take_profit": 0.543, "stop_lost": 2, "trailing_stop_distance": 0.1})
         order.onCanceled(self._order_canceled_listener)
         order.onFilled(self._order_filled_listener)
         print(order.order_id)
