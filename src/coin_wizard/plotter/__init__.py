@@ -23,7 +23,7 @@ def update_crosshair_text(x, y, xtext, ytext):
     ytext += ' O: %.5f H: %.5f L: %.5f C: %.5f' % (row['open'], row['high'], row['low'], row['close'])
     return xtext, ytext
 
-def plot_candles(title_, candles_, target_timezone):
+def plot_candles(title_, candles_, target_timezone='UTC'):
     global hover_label, candles, title
     title = title_
     candles = candles_
