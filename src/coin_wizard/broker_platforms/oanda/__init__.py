@@ -22,8 +22,8 @@ update_interval_threshold_ms = 50
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['access_token', 'account_id']
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms = 1000):
-        super().__init__(before_loop, after_loop, broker_settings, loop_interval_ms)
+    def __init__(self, before_loop, after_loop, broker_settings, nsp, loop_interval_ms = 1000):
+        super().__init__(before_loop, after_loop, broker_settings, nsp, loop_interval_ms)
         self.oanda_api = API(access_token=broker_settings['access_token'])
         self.account_id = broker_settings['account_id']
         self.instruments_watchlist = {}
@@ -41,12 +41,12 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
         account = rv['account']
         self.latest_sync_transaction_id = int(account['lastTransactionID'])
-        self.account.balance = account['balance']
+        self.account.balance = float(account['balance'])
         self.account.currency = account['currency']
-        self.account.margin_rate = account['marginRate']
-        self.account.margin_used = account['marginUsed']
-        self.account.margin_available = account['marginAvailable']
-        self.account.unrealized_pl = account['unrealizedPL']
+        self.account.margin_rate = float(account['marginRate'])
+        self.account.margin_used = float(account['marginUsed'])
+        self.account.margin_available = float(account['marginAvailable'])
+        self.account.unrealized_pl = float(account['unrealizedPL'])
 
         for order_detail in account['orders']:
             try:
@@ -247,17 +247,18 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         for order in self.account.orders:
             if order.order_id == order_id:
                 order.canceled = True
+                self.order_canceled_listener(order, reason)
                 order.canceled_listener(order, reason)
                 self.account.orders.remove(order)
                 break
 
-    def _remove_trade_detail(self, trade_id):
-        for trade in self.account.trades:
-            if trade.trade_id == trade_id:
-                trade.closed = True
-                trade.closed_listener(trade)
-                self.account.trades.remove(trade)
-                break
+    # def _remove_trade_detail(self, trade_id):
+    #     for trade in self.account.trades:
+    #         if trade.trade_id == trade_id:
+    #             trade.closed = True
+    #             trade.closed_listener(trade)
+    #             self.account.trades.remove(trade)
+    #             break
 
     def _order_cancel_handler(self, order):
         order_id = order.order_id
@@ -315,12 +316,12 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         r = accounts.AccountSummary(self.account_id)
         rv = self.oanda_api.request(r)
         account = rv['account']
-        self.account.balance = account['balance']
+        self.account.balance = float(account['balance'])
         self.account.currency = account['currency']
-        self.account.margin_rate = account['marginRate']
-        self.account.margin_used = account['marginUsed']
-        self.account.margin_available = account['marginAvailable']
-        self.account.unrealized_pl = account['unrealizedPL']
+        self.account.margin_rate = float(account['marginRate'])
+        self.account.margin_used = float(account['marginUsed'])
+        self.account.margin_available = float(account['marginAvailable'])
+        self.account.unrealized_pl = float(account['unrealizedPL'])
         self.account.latest_update_datetime = datetime.now()
 
     def _update_trade_handler(self, trade):
@@ -410,6 +411,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             close_price = float(trade_reduced['price'])
                             spread = float(trade_reduced['halfSpreadCost'])
                             # print(trade.trade_settings)
+                            self.trade_reduced_listener(trade, units, realized_pl, close_price, spread, timestamp)
                             trade.reduced_listener(trade, units, realized_pl, close_price, spread, timestamp)
 
                 if 'tradeOpened' in transaction:
@@ -440,11 +442,13 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                                 close_price = float(trade_closed['price'])
                                 spread = float(trade_closed['halfSpreadCost'])
                                 trade.closed = True
+                                self.trade_closed_listener(trade, realized_pl, close_price, spread, timestamp)
                                 trade.closed_listener(trade, realized_pl, close_price, spread, timestamp)
                                 self.account.trades.remove(trade)
 
                 if order_be_filled != None:
                     # print(order_be_filled.order_id)
                     order_be_filled.filled = True
+                    self.order_filled_listener(order_be_filled, trade_with_order)
                     order_be_filled.filled_listener(order_be_filled, trade_with_order)
                     self.account.orders.remove(order_be_filled)

@@ -7,9 +7,11 @@ def dummp_func(BrokerAPI):
     pass
 
 class BrokerEventLoopAPI(object):
-    def __init__(self, before_loop, after_loop, broker_settings, loop_interval_ms= 150):
+    def __init__(self, before_loop, after_loop, broker_settings, nsp, loop_interval_ms= 150):
         self.before_loop = before_loop
         self.after_loop = after_loop
+        self.notification_service_provider = nsp
+        self.nsp = nsp
         self.latest_loop_datetime = None
         self.loop_listener = dummp_func
         self.every_15_second_listener = dummp_func
@@ -72,6 +74,16 @@ class BrokerEventLoopAPI(object):
             time.sleep(0.001*(self.loop_interval_ms - time_passed_ms))
 
     def _run_loop(self):
+        self.nsp.addLine('balance: %.5f' % (self.account.balance))
+        self.nsp.addLine('currency: %s' % (self.account.currency))
+        self.nsp.addLine('margin rate: %.5f' % (self.account.margin_rate))
+        self.nsp.addLine('margin used: %.5f' % (self.account.margin_used))
+        self.nsp.addLine('margin available: %.5f' % (self.account.margin_available))
+        self.nsp.addLine('unrealized pl: %.5f' % (self.account.unrealized_pl))
+        self.nsp.addLine('trades counts: %3d' % (len(self.account.trades)))
+        self.nsp.addLine('orders count: %3d' % (len(self.account.orders)))
+        self.nsp.push('Account info')
+
         self.stopped = False
         self.latest_loop_datetime = datetime.now()
         self.latest_every_15_second_loop_datetime = datetime.now()

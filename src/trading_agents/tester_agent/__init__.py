@@ -17,59 +17,57 @@ class TradingAgent(object):
         print('Started directory:', agent_directory)
 
     def _order_canceled_listener(self, order, reason):
-        print('')
-        print('An order canceled.')
-        print(' '+reason)
+        pass
 
     def _order_filled_listener(self, order, trade):
-        print('')
-        print('An order filled.')
-        print(' Order settings:', order.order_settings)
-        print(' Order trade settings:', order.trade_settings)
-        # global t
+        # print('')
+        # print('An order filled.')
+        # print(' Order settings:', order.order_settings)
+        # print(' Order trade settings:', order.trade_settings)
+        # # global t
         if trade != None:
-            print(' Instrument:', trade.instrument_name)
-            print(' Open price:', trade.getOpenPrice())
-            print(' Unrealized PL:', trade.getUnrealizedPL())
-            print(' Trade settings:', trade.getTradeSettings())
-            print(' Account balance:', self.account.getBalance())
-            print(' Account unrealized PL:',self.account.getUnrealizedPL())
-            print(' Account margin available:', self.account.getMarginAvailable())
-            print(' Account margin used:', self.account.getMarginUsed())
+        #     print(' Instrument:', trade.instrument_name)
+        #     print(' Open price:', trade.getOpenPrice())
+        #     print(' Unrealized PL:', trade.getUnrealizedPL())
+        #     print(' Trade settings:', trade.getTradeSettings())
+        #     print(' Account balance:', self.account.getBalance())
+        #     print(' Account unrealized PL:',self.account.getUnrealizedPL())
+        #     print(' Account margin available:', self.account.getMarginAvailable())
+        #     print(' Account margin used:', self.account.getMarginUsed())
             trade.onReduced(self._trade_reduced_listener)
             trade.onClosed(self._trade_closed_listener)
 
-            # print(trade.trade_settings['take_profit'])
-            # if trade.trade_settings['take_profit'] == 0.543:
-            #     trade.close()
-        # t = trade
 
     def _trade_reduced_listener(self, trade, units, realized_pl, close_price, spread, timestamp):
-        print('')
-        print('A trade reduced.')
-        print(' Instrument:', trade.instrument_name)
-        print(' Units:', units)
-        print(' Open price:', trade.getOpenPrice())
-        print(' Close price:', close_price)
-        print(' Realized PL:', realized_pl)
-        print(' Trade settings:', trade.getTradeSettings())
-        print(' Account balance:', self.account.getBalance())
-        print(' Account unrealized PL:',self.account.getUnrealizedPL())
-        print(' Account margin available:', self.account.getMarginAvailable())
-        print(' Account margin used:', self.account.getMarginUsed())
+        pass
+
+        # print('')
+        # print('A trade reduced.')
+        # print(' Instrument:', trade.instrument_name)
+        # print(' Units:', units)
+        # print(' Open price:', trade.getOpenPrice())
+        # print(' Close price:', close_price)
+        # print(' Realized PL:', realized_pl)
+        # print(' Trade settings:', trade.getTradeSettings())
+        # print(' Account balance:', self.account.getBalance())
+        # print(' Account unrealized PL:',self.account.getUnrealizedPL())
+        # print(' Account margin available:', self.account.getMarginAvailable())
+        # print(' Account margin used:', self.account.getMarginUsed())
 
     def _trade_closed_listener(self, trade, realized_pl, close_price, spread, timestamp):
-        print('')
-        print('A trade closed.')
-        print(' Instrument:', trade.instrument_name)
-        print(' Open price:', trade.getOpenPrice())
-        print(' Close price:', close_price)
-        print(' Realized PL:', realized_pl)
-        print(' Trade settings:', trade.getTradeSettings())
-        print(' Account balance:', self.account.getBalance())
-        print(' Account unrealized PL:',self.account.getUnrealizedPL())
-        print(' Account margin available:', self.account.getMarginAvailable())
-        print(' Account margin used:', self.account.getMarginUsed())
+        pass
+
+        # print('')
+        # print('A trade closed.')
+        # print(' Instrument:', trade.instrument_name)
+        # print(' Open price:', trade.getOpenPrice())
+        # print(' Close price:', close_price)
+        # print(' Realized PL:', realized_pl)
+        # print(' Trade settings:', trade.getTradeSettings())
+        # print(' Account balance:', self.account.getBalance())
+        # print(' Account unrealized PL:',self.account.getUnrealizedPL())
+        # print(' Account margin available:', self.account.getMarginAvailable())
+        # print(' Account margin used:', self.account.getMarginUsed())
 
 
         # print(datetime.now().timestamp()-timestamp.timestamp())
@@ -105,14 +103,11 @@ class TradingAgent(object):
             trade.close()
 
     def run(self, BrokerAPI):
-        BrokerAPI.resetByDatetime(eastern.localize(datetime(2020, 1, 8, 0, 0)), eastern.localize(datetime(2020, 1, 11, 23, 59)))
+        # BrokerAPI.resetByDatetime(eastern.localize(datetime(2020, 1, 8, 0, 0)), eastern.localize(datetime(2020, 1, 11, 23, 59)))
         account = BrokerAPI.getAccount()
         self.account = account
         orders = account.getOrders()
         trades = account.getTrades()
-        print(account.getBalance())
-        print(account.getUnrealizedPL())
-        print(orders, trades)
         for order in orders:
             print(order.getInstrumentName(), order.getOrderSettings(), order.getTradeSettings())
             order.onCanceled(self._order_canceled_listener)

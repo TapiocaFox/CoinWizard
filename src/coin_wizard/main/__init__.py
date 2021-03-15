@@ -5,6 +5,7 @@ import coin_wizard.plotter as plotter
 
 sys.path.append('./trading_agents')
 sys.path.append('./coin_wizard/broker_platforms')
+sys.path.append('./coin_wizard/notification_service_providers')
 
 from datetime import datetime, timedelta
 
@@ -64,6 +65,10 @@ states = {
     "broker_platform_settings_dict": {
 
     }
+    ,
+    "notification_service_provider_settings_dict": {
+
+    }
 }
 
 settings = None
@@ -98,6 +103,11 @@ trading_agent_mode = "STOP"
 broker_platform_module = __import__(settings['broker_platform']).BrokerEventLoopAPI
 test_train_broker_platform_module = __import__(settings['test_train_broker_platform']).BrokerEventLoopAPI
 broker_platform = None
+notification_service_provider_module = __import__(settings['notification_service_provider']).NotificationServiceProvider
+if settings['notification_service_provider'] not in states["notification_service_provider_settings_dict"]:
+    states["notification_service_provider_settings_dict"][settings['notification_service_provider']] = {}
+save_states()
+nsp = None
 
 def stop_agent():
     global trading_agent_mode
@@ -140,12 +150,60 @@ def before_broker_platform_loop():
 def after_broker_platform_loop():
     pass
 
+def order_canceled_listener(order, reason):
+    global nsp
+    nsp.addLine('reason: %s' % (reason))
+    nsp.addLine('order settings: %s' % (json.dumps(order.order_settings, indent=2)))
+    nsp.addLine('trade settings: %s' % (json.dumps(order.trade_settings, indent=2)))
+    nsp.push('Order canceled')
+
+def order_filled_listener(order_be_filled, trade_with_order):
+    global nsp
+    nsp.addLine('instrument: %s' % (order_be_filled.instrument_name))
+    nsp.addLine('order settings: %s' % (json.dumps(order_be_filled.order_settings, indent=2)))
+    nsp.addLine('trade settings: %s' % (json.dumps(order_be_filled.trade_settings, indent=2)))
+    if trade_with_order != None:
+        nsp.addLine('open price: %s' % (trade_with_order.open_price))
+        nsp.addLine('real trade settings: %s' % (json.dumps(trade_with_order.trade_settings, indent=2)))
+    nsp.push('Order filled')
+
+def trade_closed_listener(trade, realized_pl, close_price, spread, timestamp):
+    global nsp
+    global broker_platform
+    nsp.addLine('instrument: %s' % trade.instrument_name)
+    nsp.addLine('realized pl: %.5f' % (realized_pl))
+    nsp.addLine('open price: %s' % (trade.open_price))
+    nsp.addLine('close price: %.5f' % (close_price))
+    nsp.addLine('trade settings: %s' % (json.dumps(trade.trade_settings, indent=2)))
+    nsp.addLine('account balance: %.5f' % broker_platform.account.getBalance())
+    nsp.addLine('account unrealized pl: %.5f' % broker_platform.account.getUnrealizedPL())
+    nsp.addLine('account margin available: %.5f' % broker_platform.account.getMarginAvailable())
+    nsp.addLine('account margin used: %.5f' % broker_platform.account.getMarginUsed())
+    nsp.push('Trade closed')
+
+def trade_reduced_listener(trade, units, realized_pl, close_price, spread, timestamp):
+    global nsp
+    global broker_platform
+    nsp.addLine('instrument: %s' % trade.instrument_name)
+    nsp.addLine('units: %.5f' % units)
+    nsp.addLine('realized pl: %.5f' % (realized_pl))
+    nsp.addLine('open price: %s' % (trade.open_price))
+    nsp.addLine('close price: %.5f' % (close_price))
+    nsp.addLine('trade settings: %s' % (json.dumps(trade.trade_settings, indent=2)))
+    nsp.addLine('account balance: %.5f' % broker_platform.account.getBalance())
+    nsp.addLine('account unrealized pl: %.5f' % broker_platform.account.getUnrealizedPL())
+    nsp.addLine('account margin available: %.5f' % broker_platform.account.getMarginAvailable())
+    nsp.addLine('account margin used: %.5f' % broker_platform.account.getMarginUsed())
+    nsp.push('Trade reduced')
+
 def start():
     global trading_agent_mode
     global trading_agent
     global broker_platform_module
     global test_train_broker_platform_module
+    global notification_service_provider_module
     global broker_platform
+    global nsp
 
     while True:
         selections = [
@@ -162,6 +220,8 @@ def start():
             (10, 'Plot   historical 1M pair data.'),
             (11, 'Plot   previous historical 1M pair data.'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
+            (20, 'Change notification service provider. ('+settings['notification_service_provider']+')'),
+            (21, 'Set    notification service provider settings. ('+settings['notification_service_provider']+')'),
             # (13, '[x] Select which historical pair data to be followed.'),
             (99, 'Leave'),
         ]
@@ -177,7 +237,13 @@ def start():
             trading_agent_mode = "RUN"
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
             print('Initializing broker platform('+settings['broker_platform']+')...')
-            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            nsp_settings = states["notification_service_provider_settings_dict"][settings['notification_service_provider']]
+            nsp = notification_service_provider_module(nsp_settings)
+            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, nsp)
+            broker_platform.order_canceled_listener = order_canceled_listener
+            broker_platform.order_filled_listener = order_filled_listener
+            broker_platform.trade_closed_listener = trade_closed_listener
+            broker_platform.trade_reduced_listener = trade_reduced_listener
             print('Running trading agent...')
             trading_agent.run(broker_platform)
             print('Starting broker platform event loop...')
@@ -189,7 +255,9 @@ def start():
             trading_agent_mode = "TRAIN"
             broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
             print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
-            broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            nsp_settings = states["notification_service_provider_settings_dict"][settings['notification_service_provider']]
+            nsp = notification_service_provider_module(nsp_settings)
+            broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, nsp)
             print('Testing trading agent...')
             trading_agent.train(broker_platform)
             print('Starting test/train broker platform event loop...')
@@ -201,7 +269,9 @@ def start():
             trading_agent_mode = "TEST"
             broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
             print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
-            broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            nsp_settings = states["notification_service_provider_settings_dict"][settings['notification_service_provider']]
+            nsp = notification_service_provider_module(nsp_settings)
+            broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, nsp)
             print('Testing trading agent...')
             trading_agent.test(broker_platform)
             print('Starting test/train broker platform event loop...')
@@ -240,7 +310,7 @@ def start():
         elif answer == 6:
             bp = settings['broker_platform']
             bp_settings = {}
-            print('\n=== "Broker platforms(Current: "'+bp+'")" settings ===')
+            print('\n=== "Broker platform(Current: "'+bp+'")" settings ===')
             for field in broker_platform_module.broker_settings_fields:
                 bp_settings[field] = session.prompt("    "+field + ": ")
             states["broker_platform_settings_dict"][bp] = bp_settings
@@ -249,7 +319,7 @@ def start():
         elif answer == 7:
             bp = settings['test_train_broker_platform']
             bp_settings = {}
-            print('\n=== "Test/train broker platforms(Current: "'+bp+'")" settings ===')
+            print('\n=== "Test/train broker platform(Current: "'+bp+'")" settings ===')
             for field in test_train_broker_platform_module.broker_settings_fields:
                 bp_settings[field] = session.prompt("    "+field + ": ")
             states["broker_platform_settings_dict"][bp] = bp_settings
@@ -337,6 +407,26 @@ def start():
             states['latest_historical_pair_data_update'] = datetime.now().strftime("%Y,%m,%d, %H:%M:%S")
             save_states()
 
+        elif answer == 20:
+            nsp_selections = [(filename, filename) for filename in os.listdir('./coin_wizard/notification_service_providers')]
+            nsp_answer = radiolist_dialog(title='Notification service provider', text='What do you want to do? \nNotification service provider(Current: "'+ settings['notification_service_provider'] +'"). \n', values = nsp_selections).run()
+            if nsp_answer == None:
+                continue
+            settings['notification_service_provider'] = nsp_answer
+            notification_service_provider = __import__(settings['notification_service_provider']).NotificationServiceProvider
+            states["notification_service_provider_settings_dict"][nsp_answer] = {}
+            save_states()
+            save_settings()
+
+        elif answer == 21:
+            nsp_name = settings['notification_service_provider']
+            nsp_settings = {}
+            print('\n=== "Notification service provider(Current: "'+nsp_name+'")" settings ===')
+            # print(notification_service_provider_module)
+            for field in notification_service_provider_module.notification_service_provider_settings_fields:
+                nsp_settings[field] = session.prompt("    "+field + ": ")
+            states["notification_service_provider_settings_dict"][nsp_name] = nsp_settings
+            save_states()
         else:
             print('Good bye!')
             break
