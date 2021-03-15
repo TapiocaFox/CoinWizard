@@ -115,13 +115,19 @@ def stop_agent():
 
     if trading_agent_mode == "RUN":
         trading_agent.stop_running(broker_platform)
+        broker_platform._loop()
         push_trade_agent_stop_notification()
+
     elif trading_agent_mode == "TRAIN":
         trading_agent.stop_training(broker_platform)
+        broker_platform._loop()
         push_trade_agent_stop_notification()
+
     elif trading_agent_mode == "TEST":
         trading_agent.stop_testing(broker_platform)
+        broker_platform._loop()
         push_trade_agent_stop_notification()
+
     trading_agent_mode = "STOP"
 
 def create_agent(trading_agent_name):
