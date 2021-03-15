@@ -473,9 +473,10 @@ def start():
             if nsp_answer == None:
                 continue
             settings['notification_service_provider'] = nsp_answer
-            notification_service_provider = __import__(settings['notification_service_provider']).NotificationServiceProvider
-            states["notification_service_provider_settings_dict"][nsp_answer] = {}
-            save_states()
+            notification_service_provider_module = __import__(settings['notification_service_provider']).NotificationServiceProvider
+            if settings['notification_service_provider'] not in states["notification_service_provider_settings_dict"]:
+                states["notification_service_provider_settings_dict"][nsp_answer] = {}
+                save_states()
             save_settings()
 
         elif answer == 21:

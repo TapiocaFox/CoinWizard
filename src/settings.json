@@ -2,5 +2,5 @@
   "trading_agent": "tester_agent",
   "broker_platform": "oanda",
   "test_train_broker_platform": "backtesting",
-  "notification_service_provider": "pushbullet_nsp"
+  "notification_service_provider": "cli_nsp"
 }
