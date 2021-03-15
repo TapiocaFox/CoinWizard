@@ -119,6 +119,7 @@ def stop_agent():
         trading_agent.stop_training(broker_platform)
     elif trading_agent_mode == "TEST":
         trading_agent.stop_testing(broker_platform)
+    push_trade_agent_stop_notification()
     trading_agent_mode = "STOP"
 
 def create_agent(trading_agent_name):
@@ -150,12 +151,16 @@ def before_broker_platform_loop():
 def after_broker_platform_loop():
     pass
 
+current_broker_platform_name = settings['broker_platform']
+# current_trading_agent_name = settings['trading_agent']
+
 def order_canceled_listener(order, reason):
     global nsp
     nsp.addLine('reason: %s' % (reason))
     nsp.addLine('order settings: %s' % (json.dumps(order.order_settings, indent=2)))
     nsp.addLine('trade settings: %s' % (json.dumps(order.trade_settings, indent=2)))
-    nsp.push('Order canceled')
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Order canceled (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
 
 def order_filled_listener(order_be_filled, trade_with_order):
     global nsp
@@ -165,7 +170,8 @@ def order_filled_listener(order_be_filled, trade_with_order):
     if trade_with_order != None:
         nsp.addLine('open price: %s' % (trade_with_order.open_price))
         nsp.addLine('real trade settings: %s' % (json.dumps(trade_with_order.trade_settings, indent=2)))
-    nsp.push('Order filled')
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Order filled (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
 
 def trade_closed_listener(trade, realized_pl, close_price, spread, timestamp):
     global nsp
@@ -179,7 +185,8 @@ def trade_closed_listener(trade, realized_pl, close_price, spread, timestamp):
     nsp.addLine('account unrealized pl: %.5f' % broker_platform.account.getUnrealizedPL())
     nsp.addLine('account margin available: %.5f' % broker_platform.account.getMarginAvailable())
     nsp.addLine('account margin used: %.5f' % broker_platform.account.getMarginUsed())
-    nsp.push('Trade closed')
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Trade closed (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
 
 def trade_reduced_listener(trade, units, realized_pl, close_price, spread, timestamp):
     global nsp
@@ -194,7 +201,45 @@ def trade_reduced_listener(trade, units, realized_pl, close_price, spread, times
     nsp.addLine('account unrealized pl: %.5f' % broker_platform.account.getUnrealizedPL())
     nsp.addLine('account margin available: %.5f' % broker_platform.account.getMarginAvailable())
     nsp.addLine('account margin used: %.5f' % broker_platform.account.getMarginUsed())
-    nsp.push('Trade reduced')
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Trade reduced (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
+
+def push_trade_agent_start_notification():
+    nsp.addLine('account balance: %.5f' % (broker_platform.account.balance))
+    nsp.addLine('account currency: %s' % (broker_platform.account.currency))
+    nsp.addLine('account margin rate: %.5f' % (broker_platform.account.margin_rate))
+    nsp.addLine('account margin used: %.5f' % (broker_platform.account.margin_used))
+    nsp.addLine('account margin available: %.5f' % (broker_platform.account.margin_available))
+    nsp.addLine('account unrealized pl: %.5f' % (broker_platform.account.unrealized_pl))
+    nsp.addLine('account trades counts: %3d' % (len(broker_platform.account.trades)))
+    nsp.addLine('account orders count: %3d' % (len(broker_platform.account.orders)))
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Trade agent run (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
+
+def push_trade_agent_train_test_notification():
+    nsp.addLine('account balance: %.5f' % (broker_platform.account.balance))
+    nsp.addLine('account currency: %s' % (broker_platform.account.currency))
+    nsp.addLine('account margin rate: %.5f' % (broker_platform.account.margin_rate))
+    nsp.addLine('account margin used: %.5f' % (broker_platform.account.margin_used))
+    nsp.addLine('account margin available: %.5f' % (broker_platform.account.margin_available))
+    nsp.addLine('account unrealized pl: %.5f' % (broker_platform.account.unrealized_pl))
+    nsp.addLine('account trades counts: %3d' % (len(broker_platform.account.trades)))
+    nsp.addLine('account orders count: %3d' % (len(broker_platform.account.orders)))
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Trade agent train/test (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
+
+def push_trade_agent_stop_notification():
+    nsp.addLine('account balance: %.5f' % (broker_platform.account.balance))
+    nsp.addLine('account currency: %s' % (broker_platform.account.currency))
+    nsp.addLine('account margin rate: %.5f' % (broker_platform.account.margin_rate))
+    nsp.addLine('account margin used: %.5f' % (broker_platform.account.margin_used))
+    nsp.addLine('account margin available: %.5f' % (broker_platform.account.margin_available))
+    nsp.addLine('account unrealized pl: %.5f' % (broker_platform.account.unrealized_pl))
+    nsp.addLine('account trades counts: %3d' % (len(broker_platform.account.trades)))
+    nsp.addLine('account orders count: %3d' % (len(broker_platform.account.orders)))
+    # nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.addLine('push date: %s' % (datetime.now().isoformat()))
+    nsp.push('Trade agent stop (%s/%s)'%(current_broker_platform_name, settings['trading_agent']))
 
 def start():
     global trading_agent_mode
@@ -203,6 +248,7 @@ def start():
     global test_train_broker_platform_module
     global notification_service_provider_module
     global broker_platform
+    global current_broker_platform_name
     global nsp
 
     while True:
@@ -235,6 +281,7 @@ def start():
 
         elif answer == 0:
             trading_agent_mode = "RUN"
+            current_broker_platform_name = settings['broker_platform']
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
             print('Initializing broker platform('+settings['broker_platform']+')...')
             nsp_settings = states["notification_service_provider_settings_dict"][settings['notification_service_provider']]
@@ -244,6 +291,7 @@ def start():
             broker_platform.order_filled_listener = order_filled_listener
             broker_platform.trade_closed_listener = trade_closed_listener
             broker_platform.trade_reduced_listener = trade_reduced_listener
+            push_trade_agent_start_notification()
             print('Running trading agent...')
             trading_agent.run(broker_platform)
             print('Starting broker platform event loop...')
@@ -253,11 +301,17 @@ def start():
 
         elif answer == 1:
             trading_agent_mode = "TRAIN"
+            current_broker_platform_name = settings['test_train_broker_platform']
             broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
             print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
             nsp_settings = states["notification_service_provider_settings_dict"][settings['notification_service_provider']]
             nsp = notification_service_provider_module(nsp_settings)
             broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, nsp)
+            broker_platform.order_canceled_listener = order_canceled_listener
+            broker_platform.order_filled_listener = order_filled_listener
+            broker_platform.trade_closed_listener = trade_closed_listener
+            broker_platform.trade_reduced_listener = trade_reduced_listener
+            push_trade_agent_train_test_notification()
             print('Testing trading agent...')
             trading_agent.train(broker_platform)
             print('Starting test/train broker platform event loop...')
@@ -267,11 +321,17 @@ def start():
 
         elif answer == 2:
             trading_agent_mode = "TEST"
+            current_broker_platform_name = settings['test_train_broker_platform']
             broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
             print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
             nsp_settings = states["notification_service_provider_settings_dict"][settings['notification_service_provider']]
             nsp = notification_service_provider_module(nsp_settings)
             broker_platform = test_train_broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, nsp)
+            broker_platform.order_canceled_listener = order_canceled_listener
+            broker_platform.order_filled_listener = order_filled_listener
+            broker_platform.trade_closed_listener = trade_closed_listener
+            broker_platform.trade_reduced_listener = trade_reduced_listener
+            push_trade_agent_train_test_notification()
             print('Testing trading agent...')
             trading_agent.test(broker_platform)
             print('Starting test/train broker platform event loop...')

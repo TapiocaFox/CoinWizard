@@ -175,6 +175,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def _order_cancel_handler(self, order):
         order.canceled = True
         self.account.orders.remove(order)
+        self.order_canceled_listener(order, 'Canceled by user.')
         order.canceled_listener(order, 'Canceled by user.')
 
     def _trade_close_handler(self, trade):
@@ -193,6 +194,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             self.account.balance += realized_pl
             self.account.margin_used -= trade.margin_rate*abs(current_units)*(ask_price+bid_price)/2.0
             self.account.unrealized_pl -= realized_pl
+            self.trade_closed_listener(trade, realized_pl, bid_price, spread, self.current_virtual_datetime)
             trade.closed_listener(trade, realized_pl, bid_price, spread, self.current_virtual_datetime)
         else:
             realized_pl = -current_units*(trade.open_price - ask_price)
@@ -202,6 +204,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             self.account.balance += realized_pl
             self.account.margin_used -= trade.margin_rate*abs(current_units)*(ask_price+bid_price)/2.0
             self.account.unrealized_pl -= realized_pl
+            self.trade_closed_listener(trade, realized_pl, bid_price, spread, self.current_virtual_datetime)
             trade.closed_listener(trade, realized_pl, ask_price, spread, self.current_virtual_datetime)
 
     def _trade_reduce_handler(self, trade, units):
@@ -219,6 +222,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             self.account.balance += realized_pl
             self.account.margin_used -= trade.margin_rate*abs(reduce_units)*(ask_price+bid_price)/2.0
             self.account.unrealized_pl -= realized_pl
+            self.trade_reduced_listener(trade, -reduce_units, realized_pl, bid_price, spread, self.current_virtual_datetime)
             trade.reduced_listener(trade, -reduce_units, realized_pl, bid_price, spread, self.current_virtual_datetime)
         else:
             realized_pl = reduce_units*(trade.open_price - ask_price)
@@ -227,6 +231,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             self.account.balance += realized_pl
             self.account.margin_used -= trade.margin_rate*abs(reduce_units)*(ask_price+bid_price)/2.0
             self.account.unrealized_pl -= realized_pl
+            self.trade_reduced_listener(trade, reduce_units, realized_pl, ask_price, spread, self.current_virtual_datetime)
             trade.reduced_listener(trade, reduce_units, realized_pl, ask_price, spread, self.current_virtual_datetime)
 
     def _trade_modify_handler(self, trade, trade_settings):
@@ -317,6 +322,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed = True
                         self.account.trades.remove(trade)
                         self.account.balance += unrealized_pl
+                        self.trade_closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         trade.closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         continue
                 if "stop_lost" in trade_settings:
@@ -325,6 +331,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed = True
                         self.account.trades.remove(trade)
                         self.account.balance += unrealized_pl
+                        self.trade_closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         trade.closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         continue
                 if "trailing_stop_distance" in trade_settings:
@@ -335,6 +342,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed = True
                         self.account.trades.remove(trade)
                         self.account.balance += unrealized_pl
+                        self.trade_closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         trade.closed_listener(trade, unrealized_pl, bid_price, spread, self.current_virtual_datetime)
                         continue
             else:
@@ -346,6 +354,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed = True
                         self.account.trades.remove(trade)
                         self.account.balance += unrealized_pl
+                        self.trade_closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         trade.closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         continue
                 if "stop_lost" in trade_settings:
@@ -354,6 +363,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed = True
                         self.account.trades.remove(trade)
                         self.account.balance += unrealized_pl
+                        self.trade_closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         trade.closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         continue
                 if "trailing_stop_distance" in trade_settings:
@@ -364,6 +374,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         trade.closed = True
                         self.account.trades.remove(trade)
                         self.account.balance += unrealized_pl
+                        self.trade_closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         trade.closed_listener(trade, unrealized_pl, ask_price, spread, self.current_virtual_datetime)
                         continue
             unrealized_pl_sum += unrealized_pl
@@ -473,6 +484,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     self.account.trades.append(trade)
                     self.account.orders.remove(order)
                     order.filled = True
+                    self.order_filled_listener(order, trade)
                     order.filled_listener(order, trade)
                 else:
                     # units = trade.trade_settings['units']
@@ -491,6 +503,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             self.account.trades.append(trade)
                             self.account.orders.remove(order)
                             order.filled = True
+                            self.order_filled_listener(order, trade)
                             order.filled_listener(order, trade)
                             units = 0
                         else:
@@ -510,6 +523,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                                 self.account.trades.append(trade)
                                 self.account.orders.remove(order)
                                 order.filled = True
+                                self.order_filled_listener(order, trade)
                                 order.filled_listener(order, trade)
                                 units = 0
 
@@ -525,6 +539,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                                 oldest_account_trade_with_instrument_name.reduce(units_to_be_reduce)
                                 self.account.orders.remove(order)
                                 order.filled = True
+                                self.order_filled_listener(order, None)
                                 order.filled_listener(order, None)
 
                                 units = 0
@@ -532,6 +547,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                             else:
                                 self.account.orders.remove(order)
                                 order.filled = True
+                                self.order_filled_listener(order, None)
                                 order.filled_listener(order, None)
 
                                 units = 0
@@ -541,6 +557,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             reason = order_to_be_canceled[1]
             order.canceled = True
             self.account.orders.remove(order)
+            self.order_canceled_listener(order, reason)
             order.canceled_listener(order, reason)
 
     def _loop(self):
