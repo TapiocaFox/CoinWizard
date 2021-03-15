@@ -1,4 +1,5 @@
 # CoinWizard
+![alt text](/imgs/terminal.png)
 A foreign currencies/forex trading management program.
 
 # Installation
