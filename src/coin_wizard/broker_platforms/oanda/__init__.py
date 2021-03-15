@@ -355,21 +355,22 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
 
 
     def _loop(self):
-        instruments_string = ','.join([i for i in self.instruments_watchlist])
-        r = pricing.PricingInfo(self.account_id, params={"instruments":instruments_string})
-        rv = self.oanda_api.request(r)
-        # print(json.dumps(rv, indent=2))
-        prices = rv['prices']
-        # Update instruments
-        for price in prices:
-            instrument = self.instruments_watchlist[price['instrument']]
-            instrument.current_closeout_bid = float(price['closeoutBid'])
-            instrument.current_closeout_ask = float(price['closeoutAsk'])
-            instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
-            instrument.tradable = price['tradeable']
-            # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
-            # print(instrument.recent_1m_candles)
-            # print(instrument.recent_1m_candles.tail(1))
+        if len(self.instruments_watchlist):
+            instruments_string = ','.join([i for i in self.instruments_watchlist])
+            r = pricing.PricingInfo(self.account_id, params={"instruments":instruments_string})
+            rv = self.oanda_api.request(r)
+            # print(json.dumps(rv, indent=2))
+            prices = rv['prices']
+            # Update instruments
+            for price in prices:
+                instrument = self.instruments_watchlist[price['instrument']]
+                instrument.current_closeout_bid = float(price['closeoutBid'])
+                instrument.current_closeout_ask = float(price['closeoutAsk'])
+                instrument.current_closeout_bid_ask_datetime = dateutil.parser.isoparse(price['time'])
+                instrument.tradable = price['tradeable']
+                # instrument.recent_1m_candles = self._convert_mid_candles_to_dataframe(candles)
+                # print(instrument.recent_1m_candles)
+                # print(instrument.recent_1m_candles.tail(1))
 
         # Update transactions
         r = transactions.TransactionsSinceID(self.account_id, {"id": self.latest_sync_transaction_id})
@@ -400,7 +401,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                     # for order in self.account.orders:
                     #     print(order.order_id)
                     trade_reduced = transaction['tradeReduced']
-                    trade_id = trade_opened['tradeID']
+                    trade_id = trade_reduced['tradeID']
                     for trade in self.account.trades:
                         # print(trade.trade_id)
                         # print(trade.trade_id == trade_id)

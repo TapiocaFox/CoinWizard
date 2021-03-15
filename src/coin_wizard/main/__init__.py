@@ -115,11 +115,13 @@ def stop_agent():
 
     if trading_agent_mode == "RUN":
         trading_agent.stop_running(broker_platform)
+        push_trade_agent_stop_notification()
     elif trading_agent_mode == "TRAIN":
         trading_agent.stop_training(broker_platform)
+        push_trade_agent_stop_notification()
     elif trading_agent_mode == "TEST":
         trading_agent.stop_testing(broker_platform)
-    push_trade_agent_stop_notification()
+        push_trade_agent_stop_notification()
     trading_agent_mode = "STOP"
 
 def create_agent(trading_agent_name):
@@ -129,7 +131,7 @@ def create_agent(trading_agent_name):
         os.makedirs(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
     return trading_agent_module.TradingAgent(os.path.join(cwd, 'trading_agents_files', trading_agent_name))
 
-trading_agent = create_agent(settings['trading_agent'])
+trading_agent = None
 # def create_broker_platform(broker_platform_name):
 #     broker_platform_module = __import__(broker_platform_name)
 #     print('Selected trading agent:', trading_agent_module)
@@ -146,6 +148,7 @@ signal.signal(signal.SIGINT, signal_handler)
 # print(broker_platform_module.broker_settings_fields)
 
 def before_broker_platform_loop():
+    # print(1234)
     pass
 
 def after_broker_platform_loop():
@@ -281,6 +284,7 @@ def start():
 
         elif answer == 0:
             trading_agent_mode = "RUN"
+            trading_agent = create_agent(settings['trading_agent'])
             current_broker_platform_name = settings['broker_platform']
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
             print('Initializing broker platform('+settings['broker_platform']+')...')
@@ -301,6 +305,7 @@ def start():
 
         elif answer == 1:
             trading_agent_mode = "TRAIN"
+            trading_agent = create_agent(settings['trading_agent'])
             current_broker_platform_name = settings['test_train_broker_platform']
             broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
             print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
@@ -321,6 +326,7 @@ def start():
 
         elif answer == 2:
             trading_agent_mode = "TEST"
+            trading_agent = create_agent(settings['trading_agent'])
             current_broker_platform_name = settings['test_train_broker_platform']
             broker_platform_settings = states["broker_platform_settings_dict"][settings['test_train_broker_platform']]
             print('Initializing test/train broker platform('+settings['test_train_broker_platform']+')...')
@@ -346,7 +352,6 @@ def start():
                 continue
             settings['trading_agent'] = agent_answer
             stop_agent()
-            trading_agent = create_agent(agent_answer)
             save_settings()
 
         elif answer == 4:

@@ -571,6 +571,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         self.before_loop()
         self._loop()
         # print(1000*(self.current_virtual_datetime.timestamp() - self.latest_every_15_second_loop_datetime.timestamp()))
+        # print(1000*(self.current_virtual_datetime.timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) >= 14999)
+        # print(self.every_15_second_listener)
         # Fire every_15_second_listener if needed.
         if 1000*(self.current_virtual_datetime.timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) >= 14999:
             self.every_15_second_listener(self)
