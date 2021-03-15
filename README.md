@@ -43,14 +43,14 @@ order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 2})
 order = BrokerAPI.order('EUR_USD', {"type": "stop", "price": 2, "bound": 2.1}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.001})
 ```
 ### BrokerAPI.onLoop
-Register listener/callback for every loops of event-loop.
+Register listener/callback for every loop of event-loop.
 ``` python3
 # Note that every times that the callback emitted BrokerAPI is passed as parameters.
 def loop(BrokerAPI):
   # do something here
   pass
 
-# With every loops of event-loop call loop() function.
+# With every loop of event-loop call loop() function.
 order = BrokerAPI.onLoop(loop)
 ```
 ### BrokerAPI.onEvery15Second
@@ -61,7 +61,7 @@ def loop15s(BrokerAPI):
   # do something here
   pass
 
-# With every loops of event-loop call loop15s() function.
+# With every 15 seconds of event-loop call loop15s() function.
 order = BrokerAPI.onEvery15Second(loop15s)
 ```
 ## 2. Account
