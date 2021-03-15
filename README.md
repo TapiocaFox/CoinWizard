@@ -319,7 +319,7 @@ tradable = instrument.isTradable()
 ```
 
 ## coin_wizard.historical_pair_data
-In your trade agent
+In your trading agent
 ``` python3
 import coin_wizard.historical_pair_data as historical_pair_data
 ```
