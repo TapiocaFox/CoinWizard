@@ -28,6 +28,9 @@ class BrokerEventLoopAPI(object):
     def getAccount(self):
         return self.account
 
+    def getNotificationServiceProvider(self):
+        return self.nsp
+
     def onLoop(self, loop_listener):
         self.loop_listener = loop_listener
 

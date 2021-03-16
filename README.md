@@ -18,7 +18,8 @@ Index:
 3. Order
 4. Trade
 5. Instrument
-6. coin_wizard.historical_pair_data
+6. NotificationServiceProvider
+7. coin_wizard.historical_pair_data
 
 ## 1. BrokerAPI
 ### BrokerAPI.getAccount
@@ -41,6 +42,11 @@ order = BrokerAPI.order('EUR_USD', {"type": "market"}, {"units": 2})
 ``` python3
 # Order stop order of EUR_USD instrument. With load of settings.
 order = BrokerAPI.order('EUR_USD', {"type": "stop", "price": 2, "bound": 2.1}, {"units": 1, "take_profit": 2, "stop_lost": 0.5, "trailing_stop_distance": 0.001})
+```
+### BrokerAPI.getNotificationServiceProvider
+Get the notification_service_provider object.
+``` python3
+nsp = BrokerAPI.getNotificationServiceProvider()
 ```
 ### BrokerAPI.onLoop
 Register listener/callback for every loop of event-loop.
@@ -318,8 +324,32 @@ Check if such instrument is tradable.
 tradable = instrument.isTradable()
 # For example: False
 ```
-
-## coin_wizard.historical_pair_data
+## 6. NotificationServiceProvider
+First, get the notification_service_provider object from BrokerAPI.
+``` python3
+nsp = BrokerAPI.getNotificationServiceProvider()
+```
+### NotificationServiceProvider.pushImmediately()
+Push a notification immediately.
+``` python3
+# Push notification with title and context.
+nsp.pushImmediately('Title1', 'Hello')
+```
+### NotificationServiceProvider.addLine()
+Add a notification line for later push. (Not yet sent/push)
+``` python3
+# Add a line.
+nsp.addLine('Hello')
+```
+### NotificationServiceProvider.push()
+Push accumulated notification lines with title.
+``` python3
+# Add a line.
+nsp.addLine('Hello')
+# Push.
+nsp.push('Title1')
+```
+## 7. coin_wizard.historical_pair_data
 In your trading agent
 ``` python3
 import coin_wizard.historical_pair_data as historical_pair_data
