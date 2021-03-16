@@ -12,11 +12,13 @@ from datetime import datetime, timedelta
 from coin_wizard.historical_pair_data import update_historical_pair_data, plot_historical_pair_data, get_historical_pair_list
 from coin_wizard.main.event_manager import EventManager
 from coin_wizard.utils import translate_pair_to_splited, translate_pair_to_unsplited
-
+from coin_wizard.notification_service_providers.off import NotificationServiceProvider as off_nsp_mod
 from prompt_toolkit.shortcuts import radiolist_dialog, progress_dialog, input_dialog
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory
+
+off_nsp = off_nsp_mod({})
 
 time_delta_1_days = timedelta(days=1)
 
@@ -399,7 +401,7 @@ def start():
         elif answer == 8:
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
             print('Initializing broker platform('+settings['broker_platform']+')...')
-            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, off_nsp)
             print('\n=== "Plot broker platform recent pair data" settings ===')
             states["latest_broker_plot_settings"]["pair"] = pair = session.prompt("  Pair: ", default=str(states["latest_broker_plot_settings"]["pair"]))
             states["latest_broker_plot_settings"]["timezone"] = timezone = session.prompt("  Output Timezone: ", default=str(states["latest_broker_plot_settings"]["timezone"]))
@@ -416,7 +418,7 @@ def start():
         elif answer == 9:
             broker_platform_settings = states["broker_platform_settings_dict"][settings['broker_platform']]
             print('Initializing broker platform('+settings['broker_platform']+')...')
-            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings)
+            broker_platform = broker_platform_module(before_broker_platform_loop, after_broker_platform_loop, broker_platform_settings, off_nsp)
             pair = states["latest_broker_plot_settings"]["pair"]
             timezone = states["latest_broker_plot_settings"]["timezone"]
             counts = states["latest_broker_plot_settings"]["counts"]
