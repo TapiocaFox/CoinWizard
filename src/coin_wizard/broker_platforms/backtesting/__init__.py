@@ -25,7 +25,7 @@ min_trailing_stop_distance = 0.0005
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
     broker_settings_fields = ['balance', 'currency', 'margin_rate', 'start_year_utc', 'start_month_utc', 'start_day_utc', 'start_hour_utc', 'start_minute_utc', 'end_year_utc', 'end_month_utc', 'end_day_utc', 'end_hour_utc', 'end_minute_utc']
-    def __init__(self, before_loop, after_loop, broker_settings, nsp, loop_interval_ms = 1000, hedging=False):
+    def __init__(self, before_loop, after_loop, broker_settings, nsp, loop_interval_ms = 0, hedging=False):
         super().__init__(before_loop, after_loop, broker_settings, nsp, loop_interval_ms)
         self.instruments_watchlist = {}
         self.current_virtual_datetime = utc.localize(datetime(
@@ -204,7 +204,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             self.account.balance += realized_pl
             self.account.margin_used -= trade.margin_rate*abs(current_units)*(ask_price+bid_price)/2.0
             self.account.unrealized_pl -= realized_pl
-            self.trade_closed_listener(trade, realized_pl, bid_price, spread, self.current_virtual_datetime)
+            self.trade_closed_listener(trade, realized_pl, ask_price, spread, self.current_virtual_datetime)
             trade.closed_listener(trade, realized_pl, ask_price, spread, self.current_virtual_datetime)
 
     def _trade_reduce_handler(self, trade, units):
@@ -368,7 +368,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                         continue
                 if "trailing_stop_distance" in trade_settings:
                     trailing_stop_distance = trade_settings['trailing_stop_distance']
-                    trade.trailing_stop_value = max(trade.trailing_stop_value, bid_price-trailing_stop_distance)
+                    trade.trailing_stop_value = min(trade.trailing_stop_value, ask_price+trailing_stop_distance)
                     trailing_stop_value = trade.trailing_stop_value
                     if ask_price >= trailing_stop_value:
                         trade.closed = True
@@ -473,6 +473,8 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             margin_rate = trade.margin_rate
 
             if abs(units)*open_price*margin_rate > self.account.margin_available:
+                # print(abs(units)*open_price*margin_rate)
+                # print(margin_rate)
                 orders_to_be_canceled.append([order, 'Not enough Margin available.'])
             else:
                 if len(self.account.trades) == 0 or self.hedging:
