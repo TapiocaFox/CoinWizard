@@ -6,6 +6,7 @@ import pandas as pd
 from coin_wizard.historical_pair_data import get_historical_pair_data_pandas, plot_historical_pair_data
 from coin_wizard.utils import translate_pair_to_splited, translate_pair_to_unsplited
 import coin_wizard.broker_platform_objects as BrokerPlatform
+from coin_wizard.broker_platforms.backtesting.instrument import Instrument
 from datetime import datetime, timedelta
 from time import sleep
 
@@ -21,6 +22,8 @@ half_spread_high_pip = 0.8
 half_spread_low_pip = 0.6
 
 min_trailing_stop_distance = 0.0005
+
+pip = 0.0001
 
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
@@ -135,7 +138,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             return self.instruments_watchlist[instrument_name]
         # print(self.current_virtual_datetime, self.end_datetime)
 
-        instrument = BrokerPlatform.Instrument(instrument_name, self._update_instrument_handler)
+        instrument = Instrument(instrument_name, self._update_instrument_handler)
         instrument.recent_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_7_days, self.current_virtual_datetime)
         instrument.future_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime , self.end_datetime + time_delta_7_days)
         latest_candle = instrument.recent_1m_candles.tail(1).iloc[0]
@@ -145,7 +148,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         low = latest_candle['low']
         close = latest_candle['close']
 
-        half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
+        half_spread = random.uniform(half_spread_low_pip, half_spread_high_pip)*pip
         price = 0.8*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))
         # print(price, half_spread, price-half_spread, price+half_spread, open, high, low, close)
         instrument.current_closeout_bid = round(float(price-half_spread), 6)
@@ -256,35 +259,27 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # Update instruments
         for instrument_name in self.instruments_watchlist:
             instrument = self.instruments_watchlist[instrument_name]
-            latest_candle_df = instrument.future_1m_candles
-            # latest_candle_df = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_60_seconds, self.current_virtual_datetime).tail(1)
-            latest_candle_df = latest_candle_df[latest_candle_df['timestamp'] <= self.current_virtual_datetime]
-            latest_candle_df = latest_candle_df[latest_candle_df['timestamp'] >= self.current_virtual_datetime - time_delta_60_seconds]
-            # print(latest_candle_df)
-            # print(self.current_virtual_datetime - time_delta_60_seconds)
-            # print(self.current_virtual_datetime)
-            # print(instrument.recent_1m_candles)
-            instrument.active_1m_candle = latest_candle_df.tail(1).reset_index(drop=True)
-            latest_candle = latest_candle_df.tail(1)
-            # print(self.current_virtual_datetime)
-            if latest_candle.empty:
-                continue
-
-            latest_candle = latest_candle.iloc[0]
-            # print(self.current_virtual_datetime.timestamp() - latest_candle['timestamp'].to_pydatetime().timestamp())
-
-            if self.current_virtual_datetime.timestamp() - latest_candle['timestamp'].to_pydatetime().timestamp() >= 60:
-                if instrument.tradable:
+            # if instrument.active_1m_candle != None:
+            #     print(instrument.active_1m_candle['timestamp'][0].to_pydatetime())
+            if instrument.active_1m_candle is None or self.current_virtual_datetime - instrument.active_1m_candle['timestamp'][0].to_pydatetime() >= time_delta_60_seconds:
+                if self.current_virtual_datetime.timestamp() - instrument.future_1m_candles['timestamp'][0].to_pydatetime().timestamp() >= 0:
+                    if instrument.active_1m_candle is not None:
+                        instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = instrument.active_1m_candle.head(1).iloc[0]
+                    instrument.active_1m_candle = instrument.future_1m_candles.head(1).reset_index(drop=True)
+                    instrument.future_1m_candles = instrument.future_1m_candles[instrument.future_1m_candles['timestamp'] > self.current_virtual_datetime].reset_index(drop=True)
+                    instrument.quaters = 0
+                    instrument.tradable = True
+                else:
                     instrument.tradable = False
-                    instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
-            else:
-                instrument.tradable = True
+
+            if instrument.tradable:
                 quaters_of_1m = instrument.quaters
-                open = latest_candle['open']
-                high = latest_candle['high']
-                low = latest_candle['low']
-                close = latest_candle['close']
-                half_spread = random.uniform(high*half_spread_low_pip, high*half_spread_high_pip)*0.0001
+                # print(instrument.active_1m_candle)
+                open = instrument.active_1m_candle['open'][0]
+                high = instrument.active_1m_candle['high'][0]
+                low = instrument.active_1m_candle['low'][0]
+                close = instrument.active_1m_candle['close'][0]
+                half_spread = random.uniform(half_spread_low_pip, half_spread_high_pip)*pip
                 bound_to_close = open+0.25*(close-open)*quaters_of_1m
                 # print(quaters_of_1m)
                 price = 0.7*random.triangular(low, high)+0.2*random.triangular(min(bound_to_close, close), max(bound_to_close, close))+0.1*close
@@ -294,9 +289,6 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 instrument.quaters += 1
                 # print(latest_candle)
                 # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
-                if len(latest_candle_df) >= 2:
-                    instrument.quaters = 0
-                    instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = latest_candle_df.head(1).iloc[0]
 
     def _trade_and_account_loop(self):
         # Update trades, caluculate PL.
@@ -400,6 +392,10 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             instrument_name = order.instrument_name
             instrument = self.instruments_watchlist[instrument_name]
 
+            if not instrument.tradable:
+                orders_to_be_canceled.append([order, 'Instrument untradable.'])
+                continue
+
             order_settings = order.order_settings
             trade_settings = order.trade_settings.copy()
 
@@ -437,7 +433,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 else:
                     unrealized_pl = units*(ask_price - bid_price)
                     trade = BrokerPlatform.Trade('virtual_trade_id', instrument_name, bid_price, trade_settings, self._update_trade_handler)
-                    trade.bid_price = ask_price
+                    trade.open_price = bid_price
                     trade.margin_rate = self.account.margin_rate
                     trade.unrealized_pl = unrealized_pl
                     trade.reduce_handler = self._trade_reduce_handler

@@ -1,12 +1,34 @@
 #!/usr/bin/python3
+#
 
 class Instrument(object):
-    def onPriceChanged(self, changed_listener):
-        pass
+    def __init__(self, instrument_name, update_instrument):
+        self.instrument_name = instrument_name
+        self.changed_listener = None
+        self.recent_1m_candles = None
+        self.active_1m_candle = None
+        self.update_instrument = update_instrument
+        self.tradable = True
+        self.current_closeout_bid = 0.0
+        self.current_closeout_ask = 0.0
+        self.current_closeout_bid_ask_datetime = None
 
-    def getRecentCandles1M(self, counts=500):
-        pass
+    def getActive1MCandle(self):
+        self.update_instrument(self)
+        return self.active_1m_candle
+
+    def getCurrentCloseoutBidAsk(self):
+        return self.current_closeout_bid, self.current_closeout_ask, self.current_closeout_bid_ask_datetime
+
+    def getRecent1MCandles(self, counts=500):
+        self.update_instrument(self)
+        return self.recent_1m_candles.tail(counts).reset_index(drop=True).copy()
+
+    def isTradable(self):
+        self.update_instrument(self)
+        return self.tradable
 
     # For Neural Net
     def foreseeFutureCandles1M(self, counts=50):
-        pass
+        self.update_instrument(self)
+        return self.future_1m_candles.head(counts).reset_index(drop=True).copy()
