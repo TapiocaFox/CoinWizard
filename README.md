@@ -19,7 +19,8 @@ Index:
 4. Trade
 5. Instrument
 6. NotificationServiceProvider
-7. coin_wizard.historical_pair_data
+7. TechnicalIndicators
+8. coin_wizard.historical_pair_data
 
 ## 1. BrokerAPI
 ### BrokerAPI.getAccount
@@ -350,6 +351,11 @@ nsp.addLine('Hello')
 nsp.push('Title1')
 ```
 ## 7. coin_wizard.historical_pair_data
+In your trading agent
+``` python3
+ti = BrokerAPI.TechnicalIndicators
+```
+## 8. coin_wizard.historical_pair_data
 In your trading agent
 ``` python3
 import coin_wizard.historical_pair_data as historical_pair_data

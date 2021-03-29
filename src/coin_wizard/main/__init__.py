@@ -13,10 +13,13 @@ from coin_wizard.historical_pair_data import update_historical_pair_data, plot_h
 from coin_wizard.main.event_manager import EventManager
 from coin_wizard.utils import translate_pair_to_splited, translate_pair_to_unsplited
 from coin_wizard.notification_service_providers.off import NotificationServiceProvider as off_nsp_mod
+from coin_wizard.technical_indicators import TechnicalIndicators
 from prompt_toolkit.shortcuts import radiolist_dialog, progress_dialog, input_dialog
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import InMemoryHistory
+
+ti = TechnicalIndicators()
 
 off_nsp = off_nsp_mod({})
 
@@ -303,6 +306,7 @@ def start():
             broker_platform.order_filled_listener = order_filled_listener
             broker_platform.trade_closed_listener = trade_closed_listener
             broker_platform.trade_reduced_listener = trade_reduced_listener
+            broker_platform.TechnicalIndicators = ti
             push_trade_agent_start_notification()
             print('Running trading agent...')
             trading_agent.run(broker_platform)
@@ -324,6 +328,7 @@ def start():
             broker_platform.order_filled_listener = order_filled_listener
             broker_platform.trade_closed_listener = trade_closed_listener
             broker_platform.trade_reduced_listener = trade_reduced_listener
+            broker_platform.TechnicalIndicators = ti
             push_trade_agent_train_test_notification()
             print('Testing trading agent...')
             trading_agent.train(broker_platform)
@@ -345,6 +350,7 @@ def start():
             broker_platform.order_filled_listener = order_filled_listener
             broker_platform.trade_closed_listener = trade_closed_listener
             broker_platform.trade_reduced_listener = trade_reduced_listener
+            broker_platform.TechnicalIndicators = ti
             push_trade_agent_train_test_notification()
             print('Testing trading agent...')
             trading_agent.test(broker_platform)
