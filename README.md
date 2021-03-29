@@ -350,11 +350,29 @@ nsp.addLine('Hello')
 # Push.
 nsp.push('Title1')
 ```
-## 7. coin_wizard.historical_pair_data
+## 7. TechnicalIndicators
 In your trading agent
 ``` python3
 ti = BrokerAPI.TechnicalIndicators
 ```
+### TechnicalIndicators.ma(series, period=10)
+Moving average
+### TechnicalIndicators.ema(series, period=10)
+Exponential moving average
+### TechnicalIndicators.macd(series, short=12, long=26)
+Moving average convergence divergence
+### TechnicalIndicators.roc(series, period=2)
+Rate of change
+### TechnicalIndicators.momentum(series, period=4)
+Momentum
+### TechnicalIndicators.rsi_ma(series, period=10)
+Relative strength index ma
+### TechnicalIndicators.rsi_ema(series, period=10)
+Relative strength index ema
+### TechnicalIndicators.bb(series, period=20, std_num=2)
+Bollinger bands
+### TechnicalIndicators.cci(high_series, low_series, close_series, period=20)
+Commodity channel index
 ## 8. coin_wizard.historical_pair_data
 In your trading agent
 ``` python3
