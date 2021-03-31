@@ -1,5 +1,5 @@
 {
-  "trading_agent": "hb001",
+  "trading_agent": "ct002",
   "broker_platform": "oanda",
   "test_train_broker_platform": "backtesting",
   "notification_service_provider": "cli_nsp"

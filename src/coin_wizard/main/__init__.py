@@ -330,7 +330,7 @@ def start():
             broker_platform.trade_reduced_listener = trade_reduced_listener
             broker_platform.TechnicalIndicators = ti
             push_trade_agent_train_test_notification()
-            print('Testing trading agent...')
+            print('Training trading agent...')
             trading_agent.train(broker_platform)
             print('Starting test/train broker platform event loop...')
             print('Press Ctrl+C to end loop.')
