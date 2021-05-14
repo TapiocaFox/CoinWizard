@@ -13,6 +13,8 @@ python3 start.py
 ```
 # TradingAgent BrokerAPI Documentation
 Index:
+
+0. TradingAgent and BrokerAPI
 1. BrokerAPI
 2. Account
 3. Order
@@ -21,6 +23,35 @@ Index:
 6. NotificationServiceProvider
 7. TechnicalIndicators
 8. coin_wizard.historical_pair_data
+
+## 0. BrokerAPI
+You shall aquire your BrokerAPI from your TradingAgent start(), test(), train() functions as an entry point. Depended on your choice of launching TradingAgent.
+``` python3
+class TradingAgent(object):
+    def __init__(self, agent_files_directory):
+        pass
+
+    def run(self, BrokerAPI):
+        # Can be here.
+        pass
+
+    def stop_running(self, BrokerAPI):
+        pass
+
+    def train(self, BrokerAPI):
+        # Can be here.
+        pass
+
+    def stop_training(self, BrokerAPI):
+        pass
+
+    def test(self, BrokerAPI):
+        # Or can be here.
+        pass
+
+    def stop_testing(self, BrokerAPI):
+        pass
+```
 
 ## 1. BrokerAPI
 ### BrokerAPI.getAccount
