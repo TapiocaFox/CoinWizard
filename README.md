@@ -24,7 +24,7 @@ Index:
 7. TechnicalIndicators
 8. coin_wizard.historical_pair_data
 
-## 0. BrokerAPI
+## 0. TradingAgent and BrokerAPI
 You shall aquire your BrokerAPI from your TradingAgent start(), test(), train() functions as an entry point. Depended on your choice of launching TradingAgent.
 ``` python3
 class TradingAgent(object):
