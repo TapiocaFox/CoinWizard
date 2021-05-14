@@ -58,7 +58,7 @@ def loop(BrokerAPI):
   pass
 
 # With every loop of event-loop call loop() function.
-order = BrokerAPI.onLoop(loop)
+BrokerAPI.onLoop(loop)
 ```
 ### BrokerAPI.onEvery15Second
 Register listener/callback for every 15 seconds.
@@ -69,7 +69,7 @@ def loop15s(BrokerAPI):
   pass
 
 # With every 15 seconds of event-loop call loop15s() function.
-order = BrokerAPI.onEvery15Second(loop15s)
+BrokerAPI.onEvery15Second(loop15s)
 ```
 ## 2. Account
 First, get the account object from BrokerAPI.

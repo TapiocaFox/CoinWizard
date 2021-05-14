@@ -57,10 +57,12 @@ def plot_candles(title_, candles_, target_timezone='UTC'):
     # fplt.candle_bull_color = fplt.candle_bear_color = '#000'
     # fplt.volume_bull_color = fplt.volume_bear_color = '#333'
     # fplt.candle_bull_body_color = fplt.volume_bull_body_color = '#fff'
+    # ma = ti.ma(candles.close, 30)
     upper, lower = ti.bb(candles.close)
 
     fplt.display_timezone = gettz(target_timezone)
     fplt.candlestick_ochl(candles[['timestamp', 'open', 'close', 'high', 'low']], ax=ax)
+    # fplt.plot(ma, ax=ax, legend='MA', color=green)
     fplt.plot(upper, ax=ax, legend='BB Upper', color=red)
     fplt.plot(lower, ax=ax, legend='BB Lower', color=green)
     hover_label = fplt.add_legend('', ax=ax)
