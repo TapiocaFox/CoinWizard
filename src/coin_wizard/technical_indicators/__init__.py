@@ -63,7 +63,7 @@ class TechnicalIndicators(object):
     # Commodity channel index
     def cci(self, high_series, low_series, close_series, period=20):
         pp = (high_series + low_series + close_series) / 3
-        return (pp - pp.rolling(period, min_periods=period).mean()) / pp.rolling(period, min_periods=period).std()
+        return (pp - pp.rolling(period, min_periods=period).mean()) / (0.015 * pp.rolling(period, min_periods=period).std())
 
     # # Yeh trapzoid index
     # def yti(self):

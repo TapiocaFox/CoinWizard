@@ -32,7 +32,7 @@ def plot_candles(title_, candles_, target_timezone='UTC'):
     global hover_label, candles, title
     title = title_
     candles = candles_
-    ax, ax2 = fplt.create_plot(title, rows=2)
+    ax, ax2, ax3, ax4 = fplt.create_plot(title, rows=4)
     candles['timestamp'] = candles['timestamp'].astype('int64')
 
     # rsi = ti.rsi_ema(candles.close)
@@ -44,13 +44,15 @@ def plot_candles(title_, candles_, target_timezone='UTC'):
     macd = ti.macd(candles.close, short=12, long=26)
     signal = ti.ema(macd, period=9)
     candles['macd_diff'] =  macd - signal
-    momentum = ti.momentum(candles.close)
+    rsi = ti.rsi_ema(candles.close, 14)
+    cci = ti.cci(candles.close, candles.close, candles.close, 20)
     # print(candles[['timestamp', 'open', 'close', 'high', 'low', 'macd_diff']])
 
     fplt.volume_ocv(candles[['timestamp','open','close','macd_diff']], ax=ax2, colorfunc=fplt.strength_colorfilter)
     fplt.plot(macd, ax=ax2, legend='MACD')
     fplt.plot(signal, ax=ax2, legend='Signal')
-    fplt.plot(momentum, ax=ax2, legend='Monentum')
+    fplt.plot(rsi, ax=ax3, legend='RSI')
+    fplt.plot(cci, ax=ax4, legend='CCI')
 
 
     # # change to b/w coloring templates for next plots
