@@ -15,7 +15,19 @@ price_list = []
 # update_interval_threshold_ms = 50
 time_delta_15_seconds = timedelta(seconds=15)
 time_delta_60_seconds = timedelta(seconds=60)
-time_delta_7_days = timedelta(days=7)
+
+granularity_recent_candles_time_delta = {
+    "M1": timedelta(days=7),
+    "M5": timedelta(days=7*5),
+    "M15": timedelta(days=7*15),
+}
+
+granularity_time_delta = {
+    "M1": timedelta(seconds=60),
+    "M5": timedelta(seconds=60*5),
+    "M15": timedelta(seconds=60*15),
+}
+
 utc = pytz.utc
 
 half_spread_high_pip = 0.8
@@ -139,14 +151,17 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # print(self.current_virtual_datetime, self.end_datetime)
 
         instrument = Instrument(instrument_name, self._update_instrument_handler)
-        instrument.recent_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - time_delta_7_days, self.current_virtual_datetime)
-        instrument.future_1m_candles = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime , self.end_datetime + time_delta_7_days)
-        latest_candle = instrument.recent_1m_candles.tail(1).iloc[0]
 
-        open = latest_candle['open']
-        high = latest_candle['high']
-        low = latest_candle['low']
-        close = latest_candle['close']
+        for granularity in instrument.recent_candles:
+            instrument.recent_candles[granularity] = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime - granularity_recent_candles_time_delta[granularity], self.current_virtual_datetime, granularity=granularity)
+            instrument.future_candles[granularity] = get_historical_pair_data_pandas(translate_pair_to_unsplited(instrument_name), self.current_virtual_datetime , self.end_datetime + granularity_recent_candles_time_delta[granularity], granularity=granularity)
+
+        latest_m1_candle = instrument.recent_candles['M1'].tail(1).iloc[0]
+
+        open = latest_m1_candle['open']
+        high = latest_m1_candle['high']
+        low = latest_m1_candle['low']
+        close = latest_m1_candle['close']
 
         half_spread = random.uniform(half_spread_low_pip, half_spread_high_pip)*pip
         price = 0.8*random.triangular(low, high)+0.2*random.triangular(min(open, close), max(open, close))
@@ -259,26 +274,27 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         # Update instruments
         for instrument_name in self.instruments_watchlist:
             instrument = self.instruments_watchlist[instrument_name]
-            # if instrument.active_1m_candle != None:
-            #     print(instrument.active_1m_candle['timestamp'][0].to_pydatetime())
-            if instrument.active_1m_candle is None or self.current_virtual_datetime - instrument.active_1m_candle['timestamp'][0].to_pydatetime() >= time_delta_60_seconds:
-                if self.current_virtual_datetime.timestamp() - instrument.future_1m_candles['timestamp'][0].to_pydatetime().timestamp() >= 0:
-                    if instrument.active_1m_candle is not None:
-                        instrument.recent_1m_candles.loc[len(instrument.recent_1m_candles)] = instrument.active_1m_candle.head(1).iloc[0]
-                    instrument.active_1m_candle = instrument.future_1m_candles.head(1).reset_index(drop=True)
-                    instrument.future_1m_candles = instrument.future_1m_candles[instrument.future_1m_candles['timestamp'] > self.current_virtual_datetime].reset_index(drop=True)
-                    instrument.quaters = 0
-                    instrument.tradable = True
-                else:
-                    instrument.tradable = False
+            for granularity in instrument.recent_candles:
+                if instrument.active_candle[granularity] is None or self.current_virtual_datetime - instrument.active_candle[granularity]['timestamp'][0].to_pydatetime() >= granularity_time_delta['M1']:
+                    if self.current_virtual_datetime.timestamp() - instrument.future_candles[granularity]['timestamp'][0].to_pydatetime().timestamp() >= 0:
+                        if instrument.active_candle[granularity] is not None:
+                            instrument.recent_candles[granularity].loc[len(instrument.recent_candles[granularity])] = instrument.active_candle[granularity].head(1).iloc[0]
+                        instrument.active_candle[granularity] = instrument.future_candles[granularity].head(1).reset_index(drop=True)
+                        instrument.future_candles[granularity] = instrument.future_candles[granularity][instrument.future_candles[granularity]['timestamp'] > self.current_virtual_datetime].reset_index(drop=True)
+                        if granularity == 'M1':
+                            instrument.quaters = 0
+                            instrument.tradable = True
+                    else:
+                        if granularity == 'M1':
+                            instrument.tradable = False
 
             if instrument.tradable:
                 quaters_of_1m = instrument.quaters
-                # print(instrument.active_1m_candle)
-                open = instrument.active_1m_candle['open'][0]
-                high = instrument.active_1m_candle['high'][0]
-                low = instrument.active_1m_candle['low'][0]
-                close = instrument.active_1m_candle['close'][0]
+                # print(instrument.active_candle[granularity])
+                open = instrument.active_candle['M1']['open'][0]
+                high = instrument.active_candle['M1']['high'][0]
+                low = instrument.active_candle['M1']['low'][0]
+                close = instrument.active_candle['M1']['close'][0]
                 half_spread = random.uniform(half_spread_low_pip, half_spread_high_pip)*pip
                 bound_to_close = open+0.25*(close-open)*quaters_of_1m
                 # print(quaters_of_1m)
@@ -287,8 +303,6 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 instrument.current_closeout_ask = round(float(price+half_spread), 6)
                 instrument.current_closeout_bid_ask_datetime = self.current_virtual_datetime
                 instrument.quaters += 1
-                # print(latest_candle)
-                # print(latest_candle['timestamp'] != instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
 
     def _trade_and_account_loop(self):
         # Update trades, caluculate PL.

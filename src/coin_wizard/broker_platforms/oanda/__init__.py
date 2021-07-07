@@ -308,11 +308,12 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             new_candles_df = candles_df.loc[candles_df['completed'] == True]
             new_candles_df = new_candles_df.loc[new_candles_df['timestamp'] > instrument.recent_candles[granularity].tail(1).iloc[0]['timestamp']]
 
+            instrument.active_candle[granularity] = candles_df.loc[candles_df['completed'] == False]
+            
             if not new_candles_df.empty:
                 instrument.recent_candles[granularity] = instrument.recent_candles[granularity].append(new_candles_df).reset_index(drop=True)
 
             if granularity == 'M1':
-                instrument.active_1m_candle = candles_df.loc[candles_df['completed'] == False]
                 latest_candles_iso_time = candles[-1]['time']
 
         instrument.latest_candles_iso_time = latest_candles_iso_time

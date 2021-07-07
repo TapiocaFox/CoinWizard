@@ -10,6 +10,11 @@ class Instrument(object):
             'M5': None,
             'M15': None,
         }
+        self.active_candle = {
+            'M1': None,
+            'M5': None,
+            'M15': None,
+        }
         self.active_1m_candle = None
         self.update_instrument = update_instrument
         self.tradable = True
@@ -18,8 +23,11 @@ class Instrument(object):
         self.current_closeout_bid_ask_datetime = None
 
     def getActive1MCandle(self):
+        return self.getActiveCandle('M1')
+
+    def getActiveCandle(self, granularity='M1'):
         self.update_instrument(self)
-        return self.active_1m_candle
+        return self.active_candle[granularity]
 
     def getCurrentCloseoutBidAsk(self):
         return self.current_closeout_bid, self.current_closeout_ask, self.current_closeout_bid_ask_datetime
