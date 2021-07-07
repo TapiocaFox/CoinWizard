@@ -60,12 +60,15 @@ states = {
         "to_timezone": "US/Eastern",
         "to_year": "2016",
         "to_month": "6",
-        "to_day": "1"
+        "to_day": "1",
+
+        "granularity": "M1"
     },
     "latest_broker_plot_settings": {
         "pair": "EUR_USD",
         "timezone": "US/Eastern",
-        "counts": 1000
+        "counts": 1000,
+        "granularity": "M1"
     },
     "broker_platform_settings_dict": {
 
@@ -267,18 +270,22 @@ def start():
 
     while True:
         selections = [
+            (-1, '----- TradingAgent -----'),
             (0, 'Run    trading agent. (Broker platform: '+settings['broker_platform']+')'),
             (1, 'Train  trading agent. (Broker platform: '+settings['test_train_broker_platform']+')'),
             (2, 'Test   trading agent. (Broker platform: '+settings['test_train_broker_platform']+')'),
             (3, 'Change  trading agent. ('+settings['trading_agent']+')'),
+            (-1, '----- BrokerPlatform -----'),
             (4, 'Change broker platform. ('+settings['broker_platform']+')'),
             (5, 'Change test/train broker platform. ('+settings['test_train_broker_platform']+')'),
             (6, 'Set    broker platform settings. ('+settings['broker_platform']+')'),
             (7, 'Set    test/train broker platform settings. ('+settings['test_train_broker_platform']+')'),
-            (8, 'Plot   broker platform recent 1M pair data.'),
-            (9, 'Plot   broker platform recent 1M pair data with previous settings.'),
-            (10, 'Plot   historical 1M pair data.'),
-            (11, 'Plot   previous historical 1M pair data.'),
+            (-1, '----- Ploting -----'),
+            (8, 'Plot   broker platform recent pair data.'),
+            (9, 'Plot   broker platform recent pair data with previous settings.'),
+            (10, 'Plot   historical pair data.'),
+            (11, 'Plot   previous historical pair data.'),
+            (-1, '----- Other -----'),
             (12, 'Update historical pair data. (Latest: '+states['latest_historical_pair_data_update']+')'),
             (20, 'Change notification service provider. ('+settings['notification_service_provider']+')'),
             (21, 'Set    notification service provider settings. ('+settings['notification_service_provider']+')'),
@@ -412,13 +419,14 @@ def start():
             states["latest_broker_plot_settings"]["pair"] = pair = session.prompt("  Pair: ", default=str(states["latest_broker_plot_settings"]["pair"]))
             states["latest_broker_plot_settings"]["timezone"] = timezone = session.prompt("  Output Timezone: ", default=str(states["latest_broker_plot_settings"]["timezone"]))
             states["latest_broker_plot_settings"]["counts"] = counts = int(session.prompt("  Counts: ", default=str(states["latest_broker_plot_settings"]["counts"])))
+            states["latest_broker_plot_settings"]["granularity"] = granularity = session.prompt("  Granularity: ", default=str(states["latest_broker_plot_settings"]["granularity"]))
             if pair.islower():
                 pair = translate_pair_to_splited(pair)
             instrument = broker_platform.getInstrument(pair)
             save_states()
             print('')
             print('Ploting...')
-            plotter.plot_candles(pair+' in '+timezone, instrument.getRecent1MCandles(counts), timezone)
+            plotter.plot_candles(pair+' in '+timezone, instrument.getRecentCandles(counts, granularity), timezone)
             print('Ploted.')
 
         elif answer == 9:
@@ -428,12 +436,13 @@ def start():
             pair = states["latest_broker_plot_settings"]["pair"]
             timezone = states["latest_broker_plot_settings"]["timezone"]
             counts = states["latest_broker_plot_settings"]["counts"]
+            counts = states["latest_broker_plot_settings"]["granularity"]
             if pair.islower():
                 pair = translate_pair_to_splited(pair)
             instrument = broker_platform.getInstrument(pair)
             print('')
             print('Ploting...')
-            plotter.plot_candles(pair+' in '+timezone, instrument.getRecent1MCandles(counts), timezone)
+            plotter.plot_candles(pair+' in '+timezone, instrument.getRecentCandles(counts, granularity), timezone)
             print('Ploted.')
 
         elif answer == 10:
@@ -452,10 +461,12 @@ def start():
             states["latest_plot_settings"]["to_year"] = to_year = int(session.prompt("    Year: ", default=str(states["latest_plot_settings"]["to_year"])))
             states["latest_plot_settings"]["to_month"] = to_month = int(session.prompt("    Month: ", default=str(states["latest_plot_settings"]["to_month"])))
             states["latest_plot_settings"]["to_day"] = to_day = int(session.prompt("    Day: ", default=str(states["latest_plot_settings"]["to_day"])))
+            print('\n  Granularity (M1/M5/M15):')
+            states["latest_plot_settings"]["granularity"] = granularity = session.prompt("    Granularity: ", default=str(states["latest_plot_settings"]["granularity"]))
             save_states()
             print('')
             print('Ploting...')
-            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 0, 0)+time_delta_1_days), timezone)
+            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 0, 0)+time_delta_1_days), timezone, granularity)
             print('Ploted.')
 
         elif answer == 11:
@@ -472,9 +483,11 @@ def start():
             to_month = int(states["latest_plot_settings"]["to_month"])
             to_day = int(states["latest_plot_settings"]["to_day"])
 
+            granularity = states["latest_plot_settings"]["granularity"]
+
             print('')
             print('Ploting...')
-            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 0, 0)+time_delta_1_days), timezone)
+            plot_historical_pair_data(pair, from_timezone.localize(datetime(from_year, from_month, from_day, 0, 0)), to_timezone.localize(datetime(to_year, to_month, to_day, 0, 0)+time_delta_1_days), timezone, granularity)
             print('Ploted.')
 
         elif answer == 12:

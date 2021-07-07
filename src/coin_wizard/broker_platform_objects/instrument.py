@@ -5,7 +5,11 @@ class Instrument(object):
     def __init__(self, instrument_name, update_instrument):
         self.instrument_name = instrument_name
         self.changed_listener = None
-        self.recent_1m_candles = None
+        self.recent_candles = {
+            'M1': None,
+            'M5': None,
+            'M15': None,
+        }
         self.active_1m_candle = None
         self.update_instrument = update_instrument
         self.tradable = True
@@ -21,8 +25,11 @@ class Instrument(object):
         return self.current_closeout_bid, self.current_closeout_ask, self.current_closeout_bid_ask_datetime
 
     def getRecent1MCandles(self, counts=500):
+        return self.getRecentCandles(counts, 'M1')
+
+    def getRecentCandles(self, counts=500, granularity='M1'):
         self.update_instrument(self)
-        return self.recent_1m_candles.tail(counts).reset_index(drop=True).copy()
+        return self.recent_candles[granularity].tail(counts).reset_index(drop=True).copy()
 
     def isTradable(self):
         self.update_instrument(self)

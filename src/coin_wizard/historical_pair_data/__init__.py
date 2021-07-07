@@ -210,14 +210,32 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
 
     return np.concatenate(filtered_array_list)
 
-def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone='UTC'):
+def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone='UTC', granularity='M1'):
     df =  pd.DataFrame(get_historical_pair_data(pair, from_datetime, to_datetime))
     # print(df)
     df['utc_timestamp']= pd.DatetimeIndex(pd.to_datetime(df['utc_timestamp'], unit='s')).tz_localize('UTC').tz_convert(target_timezone)
     df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
+    df_new = df_new.set_index("timestamp")
     # print(df_new['timestamp'])
-    return df_new
-
+    if granularity == 'M1':
+        return df_new.reset_index()
+    elif granularity == 'M5':
+        t = df_new.groupby(pd.Grouper(freq='5Min')).agg({"open": "first",
+                                             "close": "last",
+                                             "low": "min",
+                                             "high": "max"})
+        t.columns = ["open", "close", "low", "high"]
+        t = t.dropna().reset_index()
+        return t
+    elif granularity == 'M15':
+        t = df_new.groupby(pd.Grouper(freq='15Min')).agg({"open": "first",
+                                             "close": "last",
+                                             "low": "min",
+                                             "high": "max"})
+        # print(t)
+        t.columns = ["open", "close", "low", "high"]
+        t = t.dropna().reset_index()
+        return t
 # def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
 #
 #     quotes = get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone)
@@ -233,5 +251,5 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
 #     # fig.update_yaxes(autorange=True)
 #     fig.show()
 
-def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
-    plotter.plot_candles('Historical chart of "'+pair+'". In "'+target_timezone+'" timezone.', get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone), target_timezone)
+def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC', granularity='M1'):
+    plotter.plot_candles('Historical '+granularity+' chart of "'+pair+'". In "'+target_timezone+'" timezone.', get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone, granularity), target_timezone)

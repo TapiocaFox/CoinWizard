@@ -104,28 +104,30 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     def getInstrument(self, instrument_name):
         if instrument_name in self.instruments_watchlist:
             return self.instruments_watchlist[instrument_name]
-        params = {
-            "granularity": "M1",
-            "count": 5000,
-            # "count": 3,
-        }
 
         instrument = BrokerPlatform.Instrument(instrument_name, self._update_instrument_handler)
 
-        r = instruments.InstrumentsCandles(instrument_name, params)
-        rv = self.oanda_api.request(r)
-        candles = rv['candles']
+        latest_candles_iso_time = None
 
-        instrument.latest_candles_iso_time = candles[-1]['time']
-        candles_df = self._convert_mid_candles_to_dataframe(candles)
-        instrument.recent_1m_candles = candles_df.loc[candles_df['completed'] == True]
+        for granularity in instrument.recent_candles:
+            params = {
+                "granularity": granularity,
+                "count": 5000,
+                # "count": 3,
+            }
+
+            r = instruments.InstrumentsCandles(instrument_name, params)
+            rv = self.oanda_api.request(r)
+            candles = rv['candles']
+            candles_df = self._convert_mid_candles_to_dataframe(candles)
+            instrument.recent_candles[granularity] = candles_df.loc[candles_df['completed'] == True]
+
+            if granularity == 'M1':
+                latest_candles_iso_time = candles[-1]['time']
+
+        instrument.latest_candles_iso_time = latest_candles_iso_time
         instrument.latest_update_datetime = datetime.now()
-        # instrument.pricing_stream = pricing.PricingStream(accountID=self.account_id, params={"instruments":instrument_name})
-        # print([R for R in self.oanda_api.request(instrument.pricing_stream)])
-        # raise
-        # instrument.current_price =
-        # print(instrument.recent_1m_candles)
-        # print(instrument.recent_1m_candles.tail(1))
+
         self.instruments_watchlist[instrument_name] = instrument
         # raise
         return instrument
@@ -290,23 +292,30 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         if 1000*(datetime.now().timestamp() - instrument.latest_update_datetime.timestamp()) < update_interval_threshold_ms:
             # print('skipped.', 1000*(datetime.now().timestamp() - instrument.latest_update_datetime.timestamp()))
             return
-        params = {
-            "granularity": "M1",
-            "from": instrument.latest_candles_iso_time,
-        }
 
-        r = instruments.InstrumentsCandles(instrument.instrument_name, params)
-        rv = self.oanda_api.request(r)
-        candles = rv['candles']
-        candles_df = self._convert_mid_candles_to_dataframe(candles)
+        latest_candles_iso_time = None
+        for granularity in instrument.recent_candles:
+            params = {
+                "granularity": granularity,
+                "from": instrument.latest_candles_iso_time,
+            }
 
-        instrument.active_1m_candle = candles_df.loc[candles_df['completed'] == False]
-        new_candles_df = candles_df.loc[candles_df['completed'] == True]
-        new_candles_df = candles_df.loc[candles_df['timestamp'] > instrument.recent_1m_candles.tail(1).iloc[0]['timestamp']]
-        # print(123, instrument.recent_1m_candles.tail(1).iloc[0]['timestamp'])
-        if not new_candles_df.empty:
-            instrument.recent_1m_candles = instrument.recent_1m_candles.append(new_candles_df).reset_index(drop=True)
-        instrument.latest_candles_iso_time = candles[-1]['time']
+            r = instruments.InstrumentsCandles(instrument.instrument_name, params)
+            rv = self.oanda_api.request(r)
+            candles = rv['candles']
+            candles_df = self._convert_mid_candles_to_dataframe(candles)
+
+            new_candles_df = candles_df.loc[candles_df['completed'] == True]
+            new_candles_df = new_candles_df.loc[new_candles_df['timestamp'] > instrument.recent_candles[granularity].tail(1).iloc[0]['timestamp']]
+
+            if not new_candles_df.empty:
+                instrument.recent_candles[granularity] = instrument.recent_candles[granularity].append(new_candles_df).reset_index(drop=True)
+
+            if granularity == 'M1':
+                instrument.active_1m_candle = candles_df.loc[candles_df['completed'] == False]
+                latest_candles_iso_time = candles[-1]['time']
+
+        instrument.latest_candles_iso_time = latest_candles_iso_time
         instrument.latest_update_datetime = datetime.now()
 
     def _update_account_handler(self):

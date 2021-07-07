@@ -74,6 +74,7 @@ class TradingAgent(object):
 
     def _run_loop(self, BrokerAPI):
         instrument = BrokerAPI.getInstrument('EUR_USD')
+        print(instrument.getRecentCandles(10, granularity='M15'))
         print(instrument.getRecent1MCandles(10))
         print(instrument.getActive1MCandle())
         print(instrument.getCurrentCloseoutBidAsk())
