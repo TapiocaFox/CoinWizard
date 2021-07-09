@@ -9,16 +9,25 @@ class Instrument(object):
             'M1': None,
             'M5': None,
             'M15': None,
+            'M30': None,
+            'H1': None,
+            'H4': None,
         }
         self.future_candles = {
             'M1': None,
             'M5': None,
             'M15': None,
+            'M30': None,
+            'H1': None,
+            'H4': None,
         }
         self.active_candle = {
             'M1': None,
             'M5': None,
             'M15': None,
+            'M30': None,
+            'H1': None,
+            'H4': None,
         }
         self.active_1m_candle = None
         self.update_instrument = update_instrument

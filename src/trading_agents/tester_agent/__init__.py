@@ -87,6 +87,7 @@ class TradingAgent(object):
     def _every_15_second_loop(self, BrokerAPI):
         global c
         if c < 6:
+            # print(c)
             c += 1
             return
         print('15 second passed.', datetime.now())

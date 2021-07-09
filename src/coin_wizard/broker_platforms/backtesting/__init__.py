@@ -20,12 +20,18 @@ granularity_recent_candles_time_delta = {
     "M1": timedelta(days=7),
     "M5": timedelta(days=7*5),
     "M15": timedelta(days=7*15),
+    "M30": timedelta(days=7*30),
+    "H1": timedelta(days=7*60),
+    "H4": timedelta(days=7*240),
 }
 
 granularity_time_delta = {
     "M1": timedelta(seconds=60),
     "M5": timedelta(seconds=60*5),
     "M15": timedelta(seconds=60*15),
+    "M30": timedelta(seconds=60*30),
+    "H1": timedelta(seconds=60*60),
+    "H4": timedelta(seconds=60*240),
 }
 
 utc = pytz.utc

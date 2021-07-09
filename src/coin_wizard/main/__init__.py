@@ -419,7 +419,7 @@ def start():
             states["latest_broker_plot_settings"]["pair"] = pair = session.prompt("  Pair: ", default=str(states["latest_broker_plot_settings"]["pair"]))
             states["latest_broker_plot_settings"]["timezone"] = timezone = session.prompt("  Output Timezone: ", default=str(states["latest_broker_plot_settings"]["timezone"]))
             states["latest_broker_plot_settings"]["counts"] = counts = int(session.prompt("  Counts: ", default=str(states["latest_broker_plot_settings"]["counts"])))
-            states["latest_broker_plot_settings"]["granularity"] = granularity = session.prompt("  Granularity: ", default=str(states["latest_broker_plot_settings"]["granularity"]))
+            states["latest_broker_plot_settings"]["granularity"] = granularity = session.prompt("  Granularity (M1/M5/M15/M30/H1/H4): ", default=str(states["latest_broker_plot_settings"]["granularity"]))
             if pair.islower():
                 pair = translate_pair_to_splited(pair)
             instrument = broker_platform.getInstrument(pair)
@@ -461,7 +461,7 @@ def start():
             states["latest_plot_settings"]["to_year"] = to_year = int(session.prompt("    Year: ", default=str(states["latest_plot_settings"]["to_year"])))
             states["latest_plot_settings"]["to_month"] = to_month = int(session.prompt("    Month: ", default=str(states["latest_plot_settings"]["to_month"])))
             states["latest_plot_settings"]["to_day"] = to_day = int(session.prompt("    Day: ", default=str(states["latest_plot_settings"]["to_day"])))
-            print('\n  Granularity (M1/M5/M15):')
+            print('\n  Granularity (M1/M5/M15/M30/H1/H4):')
             states["latest_plot_settings"]["granularity"] = granularity = session.prompt("    Granularity: ", default=str(states["latest_plot_settings"]["granularity"]))
             save_states()
             print('')
