@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import json, dateutil, pytz, random, time, traceback
+import json, dateutil, pytz, random, time, traceback, signal
 import pandas as pd
 
 from coin_wizard.historical_pair_data import get_historical_pair_data_pandas, plot_historical_pair_data
@@ -23,6 +23,7 @@ granularity_recent_candles_time_delta = {
     "M30": timedelta(days=7*30),
     "H1": timedelta(days=7*60),
     "H4": timedelta(days=7*240),
+    "D": timedelta(days=7*240),
 }
 
 granularity_time_delta = {
@@ -32,6 +33,7 @@ granularity_time_delta = {
     "M30": timedelta(seconds=60*30),
     "H1": timedelta(seconds=60*60),
     "H4": timedelta(seconds=60*240),
+    "D": timedelta(seconds=60*60*24),
 }
 
 utc = pytz.utc
@@ -42,6 +44,11 @@ half_spread_low_pip = 0.6
 min_trailing_stop_distance = 0.0005
 
 pip = 0.0001
+
+time_out_s = 15
+
+def timeout_handler(signum, frame):
+    raise Exception('BrokerEventLoopAPI loop timeout('+str(time_out_s)+' seconds passed).')
 
 class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
     hedging = False
@@ -608,11 +615,14 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
         self.latest_loop_datetime = datetime.now()
         self.latest_every_15_second_loop_datetime = self.current_virtual_datetime
         loop_failed_count = 0
+        signal.signal(signal.SIGALRM, timeout_handler)
         while True:
             if self.stopped:
                 return
             try:
+                signal.alarm(time_out_s)
                 self._loop_wrapper()
+                signal.alarm(0)
                 loop_failed_count = 0
             except Exception as err:
                 loop_failed_count += 1

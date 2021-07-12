@@ -1,7 +1,12 @@
 #!/usr/bin/python3
 
-import time, traceback
+import time, traceback, signal
 from datetime import datetime
+
+time_out_s = 15
+
+def timeout_handler(signum, frame):
+    raise Exception('BrokerEventLoopAPI loop timeout('+str(time_out_s)+' seconds passed).')
 
 def dummp_func(BrokerAPI):
     pass
@@ -81,11 +86,14 @@ class BrokerEventLoopAPI(object):
         self.latest_loop_datetime = datetime.now()
         self.latest_every_15_second_loop_datetime = datetime.now()
         loop_failed_count = 0
+        signal.signal(signal.SIGALRM, timeout_handler)
         while True:
             if self.stopped:
                 return
             try:
+                signal.alarm(time_out_s)
                 self._loop_wrapper()
+                signal.alarm(0)
                 loop_failed_count = 0
             except Exception as err:
                 loop_failed_count += 1

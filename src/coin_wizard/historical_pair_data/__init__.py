@@ -263,6 +263,15 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
+    elif granularity == 'D':
+        t = df_new.groupby(pd.Grouper(freq='1D')).agg({"open": "first",
+                                             "close": "last",
+                                             "low": "min",
+                                             "high": "max"})
+        # print(t)
+        t.columns = ["open", "close", "low", "high"]
+        t = t.dropna().reset_index()
+        return t
 # def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):
 #
 #     quotes = get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone)

@@ -73,6 +73,8 @@ class TradingAgent(object):
         # print(datetime.now().timestamp()-timestamp.timestamp())
 
     def _run_loop(self, BrokerAPI):
+        # while True:
+        #     time.sleep(1)
         instrument = BrokerAPI.getInstrument('EUR_USD')
         print(instrument.getRecentCandles(10, granularity='M15'))
         print(instrument.getRecentCandles(10, granularity='M5'))
