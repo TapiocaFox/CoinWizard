@@ -14,6 +14,7 @@ import oandapyV20.endpoints.trades as trades
 import oandapyV20.endpoints.instruments as instruments
 import oandapyV20.endpoints.pricing as pricing
 import oandapyV20.endpoints.transactions as transactions
+from .account_instruments_candles_patch import AccountsInstrumentsCandles
 
 from oandapyV20.contrib.requests import MarketOrderRequest
 
@@ -114,12 +115,20 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
                 "granularity": granularity,
                 "count": 5000,
                 # "count": 3,
+                "price": "M",
+                "alignmentTimezone": "UTC",
+                "dailyAlignment": 0
             }
 
-            r = instruments.InstrumentsCandles(instrument_name, params)
+            r = AccountsInstrumentsCandles(self.account_id, instrument.instrument_name, params)
+            # r = instruments.InstrumentsCandles(instrument_name, params)
             rv = self.oanda_api.request(r)
+            # print(json.dumps(rv, indent=2))
+
             candles = rv['candles']
+            # print(json.dumps(candles, indent=2))
             candles_df = self._convert_mid_candles_to_dataframe(candles)
+            # print(candles_df)
             instrument.recent_candles[granularity] = candles_df.loc[candles_df['completed'] == True]
 
             if granularity == 'M1':
@@ -298,9 +307,14 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             params = {
                 "granularity": granularity,
                 "from": instrument.latest_candles_iso_time,
+                "price": "M",
+                "alignmentTimezone": "UTC",
+                "dailyAlignment": 0
             }
 
-            r = instruments.InstrumentsCandles(instrument.instrument_name, params)
+            r = AccountsInstrumentsCandles(self.account_id, instrument.instrument_name, params)
+
+            # r = instruments.InstrumentsCandles(instrument.instrument_name, params)
             rv = self.oanda_api.request(r)
             candles = rv['candles']
             candles_df = self._convert_mid_candles_to_dataframe(candles)
@@ -309,7 +323,7 @@ class BrokerEventLoopAPI(BrokerPlatform.BrokerEventLoopAPI):
             new_candles_df = new_candles_df.loc[new_candles_df['timestamp'] > instrument.recent_candles[granularity].tail(1).iloc[0]['timestamp']]
 
             instrument.active_candle[granularity] = candles_df.loc[candles_df['completed'] == False]
-            
+
             if not new_candles_df.empty:
                 instrument.recent_candles[granularity] = instrument.recent_candles[granularity].append(new_candles_df).reset_index(drop=True)
 

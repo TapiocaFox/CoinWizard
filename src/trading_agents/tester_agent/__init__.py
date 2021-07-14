@@ -76,6 +76,7 @@ class TradingAgent(object):
         # while True:
         #     time.sleep(1)
         instrument = BrokerAPI.getInstrument('EUR_USD')
+        print(instrument.getRecentCandles(10, granularity='D'))
         print(instrument.getRecentCandles(10, granularity='M15'))
         print(instrument.getRecentCandles(10, granularity='M5'))
         print(instrument.getRecent1MCandles(10))

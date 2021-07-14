@@ -217,58 +217,37 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
     df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
     df_new = df_new.set_index("timestamp")
     # print(df_new['timestamp'])
+    ohlc_dict = {"open": "first", "close": "last", "low": "min", "high": "max"}
+
     if granularity == 'M1':
         return df_new.reset_index()
     elif granularity == 'M5':
-        t = df_new.groupby(pd.Grouper(freq='5Min')).agg({"open": "first",
-                                             "close": "last",
-                                             "low": "min",
-                                             "high": "max"})
+        t = df_new.resample('5Min').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
     elif granularity == 'M15':
-        t = df_new.groupby(pd.Grouper(freq='15Min')).agg({"open": "first",
-                                             "close": "last",
-                                             "low": "min",
-                                             "high": "max"})
-        # print(t)
+        t = df_new.resample('15Min').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
     elif granularity == 'M30':
-        t = df_new.groupby(pd.Grouper(freq='30Min')).agg({"open": "first",
-                                             "close": "last",
-                                             "low": "min",
-                                             "high": "max"})
-        # print(t)
+        t = df_new.resample('30Min').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
     elif granularity == 'H1':
-        t = df_new.groupby(pd.Grouper(freq='1H')).agg({"open": "first",
-                                             "close": "last",
-                                             "low": "min",
-                                             "high": "max"})
-        # print(t)
+        t = df_new.resample('1H').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
     elif granularity == 'H4':
-        t = df_new.groupby(pd.Grouper(freq='4H')).agg({"open": "first",
-                                             "close": "last",
-                                             "low": "min",
-                                             "high": "max"})
-        # print(t)
+        t = df_new.resample('4H').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
     elif granularity == 'D':
-        t = df_new.groupby(pd.Grouper(freq='1D')).agg({"open": "first",
-                                             "close": "last",
-                                             "low": "min",
-                                             "high": "max"})
-        # print(t)
+        t = df_new.resample('1D').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
         t = t.dropna().reset_index()
         return t
