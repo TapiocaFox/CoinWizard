@@ -210,7 +210,7 @@ def get_historical_pair_data(pair, from_datetime, to_datetime):
 
     return np.concatenate(filtered_array_list)
 
-def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone='UTC', granularity='M1'):
+def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_timezone='UTC', granularity='M1', invert=False):
     df =  pd.DataFrame(get_historical_pair_data(pair, from_datetime, to_datetime))
     # print(df)
     df['utc_timestamp']= pd.DatetimeIndex(pd.to_datetime(df['utc_timestamp'], unit='s')).tz_localize('UTC').tz_convert(target_timezone)
@@ -224,31 +224,55 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
     elif granularity == 'M5':
         t = df_new.resample('5Min').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
+        if invert:
+            t = 1.0/t
+            t = t.rename(columns={"low": "high", "high": "low"})
+            t = t.reindex(columns=["open", "close", "low", "high"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'M15':
         t = df_new.resample('15Min').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
+        if invert:
+            t = 1.0/t
+            t = t.rename(columns={"low": "high", "high": "low"})
+            t = t.reindex(columns=["open", "close", "low", "high"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'M30':
         t = df_new.resample('30Min').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
+        if invert:
+            t = 1.0/t
+            t = t.rename(columns={"low": "high", "high": "low"})
+            t = t.reindex(columns=["open", "close", "low", "high"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'H1':
         t = df_new.resample('1H').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
+        if invert:
+            t = 1.0/t
+            t = t.rename(columns={"low": "high", "high": "low"})
+            t = t.reindex(columns=["open", "close", "low", "high"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'H4':
         t = df_new.resample('4H').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
+        if invert:
+            t = 1.0/t
+            t = t.rename(columns={"low": "high", "high": "low"})
+            t = t.reindex(columns=["open", "close", "low", "high"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'D':
         t = df_new.resample('1D').agg(ohlc_dict)
         t.columns = ["open", "close", "low", "high"]
+        if invert:
+            t = 1.0/t
+            t = t.rename(columns={"low": "high", "high": "low"})
+            t = t.reindex(columns=["open", "close", "low", "high"])
         t = t.dropna().reset_index()
         return t
 # def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):

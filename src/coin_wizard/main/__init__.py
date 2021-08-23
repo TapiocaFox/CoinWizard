@@ -40,8 +40,11 @@ session = PromptSession(
 )
 
 print('')
-print('CoinWizard by noowyee')
-print('-')
+print('CoinWizard - A forex trading management program.')
+
+print('')
+print('CoinWizard © 2021 noowyee. All right reserved.')
+print('')
 
 cwd = os.getcwd()
 print('Current working directory:', cwd)
