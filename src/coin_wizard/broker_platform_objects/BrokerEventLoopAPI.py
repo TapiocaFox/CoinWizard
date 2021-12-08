@@ -54,6 +54,7 @@ class BrokerEventLoopAPI(object):
         # start_loop_timeStamp = datetime.now().timestamp()
         self.before_loop()
         self._loop()
+        # *********** Need to be rewrite to fit syncing the clock. And timeout funciton
         # Fire every_15_second_listener if needed.
         if 1000*(datetime.now().timestamp() - self.latest_every_15_second_loop_datetime.timestamp()) >= 15000:
             self.every_15_second_listener(self)

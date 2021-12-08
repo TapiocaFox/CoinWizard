@@ -1,0 +1,48 @@
+{
+  "trading_agent_name": "coin04",
+  "cuda": true,
+  "granularity_list": ["M15"],
+  "primary_granularity": 0,
+  "input_period_list": [200],
+  "net_input_period_list": [96],
+  "recent_log_returns_length": 8,
+  "selected_instrument_list" : ["eurusd", "audnzd", "gbpusd", "audusd", "nzdusd", "usdcad", "eurgbp", "cadjpy", "audjpy", "chfjpy", "eurjpy", "gbpjpy"],
+  "primary_intrument" : 0,
+  "primary_instrument_spread" : 0.00018,
+  "start_hour": 0,
+  "start_min": 0,
+
+  "end_hour": 23,
+  "end_min": 59,
+
+  "train_start_year": 2015,
+  "train_start_month": 1,
+  "train_start_day": 1,
+  "train_end_year": 2020,
+  "train_end_month": 10,
+  "train_end_day": 31,
+
+  "dqn_or_ppo_mode": 1,
+
+  "episode_steps": 11520,
+  "update_n_steps": 96,
+  "soft_update_ratio": 0.5,
+  "soft_update_period": 96,
+  "horizon": 48,
+  "t_len": 1,
+  "learning_rate": 0.00025,
+  "ppo_learning_rate": 0.00025,
+  "k_epochs": 4,
+  "eps_clip": 0.1,
+  "mini_batchs_size": 8,
+  "concurrent_episodes": 1,
+  "test_concurrent_episodes": 1,
+  "episodes_rounds": 256,
+
+  "test_start_year": 2020,
+  "test_start_month": 11,
+  "test_start_day": 1,
+  "test_end_year": 2021,
+  "test_end_month": 8,
+  "test_end_day": 31
+}

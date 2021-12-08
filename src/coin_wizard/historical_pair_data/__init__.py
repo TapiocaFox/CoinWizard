@@ -13,11 +13,12 @@ from zipfile import ZipFile
 from numpy import genfromtxt
 
 # import plotly.graph_objects as go
+import pathlib
 
 temp_directory = './temp'
 platform = Platform.GENERIC_ASCII
 time_frame = TimeFrame.ONE_MINUTE
-pair_data_directory = 'pair_data/'
+pair_data_directory = str(pathlib.Path(__file__).parent.resolve())+'/../../pair_data/'
 eastern = pytz.timezone('US/Eastern')
 utc = pytz.utc
 
@@ -217,62 +218,62 @@ def get_historical_pair_data_pandas(pair, from_datetime, to_datetime, target_tim
     df_new = df.rename(columns={'utc_timestamp': 'timestamp'})
     df_new = df_new.set_index("timestamp")
     # print(df_new['timestamp'])
-    ohlc_dict = {"open": "first", "close": "last", "low": "min", "high": "max"}
+    ohlc_dict = {"open": "first", "high": "max", "low": "min", "close": "last"}
 
     if granularity == 'M1':
         return df_new.reset_index()
     elif granularity == 'M5':
         t = df_new.resample('5Min').agg(ohlc_dict)
-        t.columns = ["open", "close", "low", "high"]
+        t.columns = ["open", "high", "low", "close"]
         if invert:
             t = 1.0/t
             t = t.rename(columns={"low": "high", "high": "low"})
-            t = t.reindex(columns=["open", "close", "low", "high"])
+            t = t.reindex(columns=["open", "high", "low", "close"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'M15':
         t = df_new.resample('15Min').agg(ohlc_dict)
-        t.columns = ["open", "close", "low", "high"]
+        t.columns = ["open", "high", "low", "close"]
         if invert:
             t = 1.0/t
             t = t.rename(columns={"low": "high", "high": "low"})
-            t = t.reindex(columns=["open", "close", "low", "high"])
+            t = t.reindex(columns=["open", "high", "low", "close"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'M30':
         t = df_new.resample('30Min').agg(ohlc_dict)
-        t.columns = ["open", "close", "low", "high"]
+        t.columns = ["open", "high", "low", "close"]
         if invert:
             t = 1.0/t
             t = t.rename(columns={"low": "high", "high": "low"})
-            t = t.reindex(columns=["open", "close", "low", "high"])
+            t = t.reindex(columns=["open", "high", "low", "close"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'H1':
         t = df_new.resample('1H').agg(ohlc_dict)
-        t.columns = ["open", "close", "low", "high"]
+        t.columns = ["open", "high", "low", "close"]
         if invert:
             t = 1.0/t
             t = t.rename(columns={"low": "high", "high": "low"})
-            t = t.reindex(columns=["open", "close", "low", "high"])
+            t = t.reindex(columns=["open", "high", "low", "close"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'H4':
         t = df_new.resample('4H').agg(ohlc_dict)
-        t.columns = ["open", "close", "low", "high"]
+        t.columns = ["open", "high", "low", "close"]
         if invert:
             t = 1.0/t
             t = t.rename(columns={"low": "high", "high": "low"})
-            t = t.reindex(columns=["open", "close", "low", "high"])
+            t = t.reindex(columns=["open", "high", "low", "close"])
         t = t.dropna().reset_index()
         return t
     elif granularity == 'D':
         t = df_new.resample('1D').agg(ohlc_dict)
-        t.columns = ["open", "close", "low", "high"]
+        t.columns = ["open", "high", "low", "close"]
         if invert:
             t = 1.0/t
             t = t.rename(columns={"low": "high", "high": "low"})
-            t = t.reindex(columns=["open", "close", "low", "high"])
+            t = t.reindex(columns=["open", "high", "low", "close"])
         t = t.dropna().reset_index()
         return t
 # def plot_historical_pair_data(pair, from_datetime, to_datetime, target_timezone='UTC'):

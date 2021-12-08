@@ -1,5 +1,5 @@
 {
-  "trading_agent": "bn010",
+  "trading_agent": "nt012",
   "broker_platform": "backtesting",
   "test_train_broker_platform": "backtesting",
   "notification_service_provider": "cli_nsp"
