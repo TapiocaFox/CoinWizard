@@ -1,0 +1,9 @@
+{
+  "trading_agent_name": "gold01",
+  "cuda": true,
+  "selected_instrument_list" : ["eurusd", "usdjpy", "gbpusd"],
+  "primary_intrument" : 0,
+  "granularity": "H4",
+  "observation_period": 200,
+  "net_input_length": 96
+}

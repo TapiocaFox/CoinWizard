@@ -1,0 +1,26 @@
+{
+  "episode_steps": 1440,
+  "episodes_rounds": 256,
+
+  "primary_instrument_spread" : 0.00018,
+
+  "start_hour": 0,
+  "start_min": 0,
+
+  "end_hour": 23,
+  "end_min": 59,
+
+  "train_start_year": 2018,
+  "train_start_month": 1,
+  "train_start_day": 1,
+  "train_end_year": 2020,
+  "train_end_month": 10,
+  "train_end_day": 31,
+
+  "test_start_year": 2020,
+  "test_start_month": 11,
+  "test_start_day": 1,
+  "test_end_year": 2021,
+  "test_end_month": 8,
+  "test_end_day": 31
+}
